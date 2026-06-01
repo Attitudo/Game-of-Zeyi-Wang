@@ -2,16 +2,47 @@ using UnityEngine;
 
 public class Receiver : MonoBehaviour
 {
+    [Header("Receiver Settings")]
     public GameObject door;
-    private bool isActivated = false;
+    public bool powered;
+
+    private Renderer receiverRenderer;
+    private Color defaultColor = Color.red;
+    private Color poweredColor = Color.green;
+
+    private void Awake()
+    {
+        receiverRenderer = GetComponent<Renderer>();
+        if (receiverRenderer != null)
+        {
+            defaultColor = receiverRenderer.material.color;
+        }
+    }
 
     public void Activate()
     {
-        if (!isActivated)
+        SetPowered(true);
+    }
+
+    public void SetPowered(bool value)
+    {
+        if (powered == value)
         {
-            isActivated = true;
-            door.SetActive(false);
-            Debug.Log("Receiver activated! Door opened!");
+            return;
         }
+
+        powered = value;
+
+        if (door != null)
+        {
+            door.SetActive(!powered);
+        }
+
+        if (receiverRenderer != null)
+        {
+            receiverRenderer.material.color = powered ? poweredColor : defaultColor;
+        }
+
+        Debug.Log(powered ? "Receiver powered: door opened." : "Receiver lost power: door closed.");
     }
 }

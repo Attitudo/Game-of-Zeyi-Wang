@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody))]
 public class PlayerController : MonoBehaviour
 {
     [Header("Movement Settings")]
@@ -9,15 +10,22 @@ public class PlayerController : MonoBehaviour
     public float groundCheckRadius = 0.2f;
     public LayerMask groundLayer;
 
+    [Header("Mouse Settings")]
+    public float mouseSensitivity = 100f;
+
     private Rigidbody rb;
-    private float xRotation = 0f;
+    private float xRotation;
     private Vector3 movement;
     private bool isGrounded;
+    private Camera playerCamera;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        rb.freezeRotation = true;
+        playerCamera = Camera.main;
         Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     private void Update()
@@ -29,23 +37,34 @@ public class PlayerController : MonoBehaviour
         {
             Jump();
         }
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
     }
 
     private void FixedUpdate()
     {
-        MovePlayer();
         CheckGrounded();
+        MovePlayer();
     }
 
     private void HandleMouseLook()
     {
-        float mouseX = Input.GetAxis("Mouse X") * 100f * Time.deltaTime;
-        float mouseY = Input.GetAxis("Mouse Y") * 100f * Time.deltaTime;
+        if (playerCamera == null)
+        {
+            return;
+        }
+
+        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
+        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
 
         xRotation -= mouseY;
-        xRotation = Mathf.Clamp(xRotation, -90f, 90f);
+        xRotation = Mathf.Clamp(xRotation, -80f, 80f);
 
-        Camera.main.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
+        playerCamera.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
         transform.Rotate(Vector3.up * mouseX);
     }
 
@@ -53,20 +72,23 @@ public class PlayerController : MonoBehaviour
     {
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
-        movement = transform.right * horizontal + transform.forward * vertical;
-        movement.Normalize();
+        movement = (transform.right * horizontal + transform.forward * vertical).normalized;
     }
 
     private void MovePlayer()
     {
-        if (movement.magnitude >= 0.1f)
-        {
-            rb.velocity = new Vector3(movement.x * moveSpeed, rb.velocity.y, movement.z * moveSpeed);
-        }
+        Vector3 targetVelocity = movement * moveSpeed;
+        rb.velocity = new Vector3(targetVelocity.x, rb.velocity.y, targetVelocity.z);
     }
 
     private void CheckGrounded()
     {
+        if (groundCheck == null)
+        {
+            isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.1f, groundLayer);
+            return;
+        }
+
         isGrounded = Physics.CheckSphere(groundCheck.position, groundCheckRadius, groundLayer);
     }
 
