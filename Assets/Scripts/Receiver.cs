@@ -35,7 +35,22 @@ public class Receiver : MonoBehaviour
 
         if (door != null)
         {
-            door.SetActive(!powered);
+            DoorAnimator doorAnimator = door.GetComponent<DoorAnimator>();
+            if (doorAnimator != null)
+            {
+                if (powered)
+                {
+                    doorAnimator.OpenDoor();
+                }
+                else
+                {
+                    doorAnimator.CloseDoor();
+                }
+            }
+            else
+            {
+                door.SetActive(!powered);
+            }
         }
 
         if (receiverRenderer != null)

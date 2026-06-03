@@ -9,6 +9,11 @@ public class GameManager : MonoBehaviour
     public bool levelCompleted;
     public bool playerCaught;
 
+    [Header("UI Text")]
+    public string customObjectiveTitle = "";
+    [TextArea(3, 6)] public string customObjectiveBody = "";
+    [TextArea(2, 4)] public string customCompleteMessage = "";
+
     private float messageTimer;
     private string temporaryMessage = "";
 
@@ -37,6 +42,13 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void ConfigureObjective(string title, string body, string completeMessage)
+    {
+        customObjectiveTitle = title;
+        customObjectiveBody = body;
+        customCompleteMessage = completeMessage;
+    }
+
     public void PlayerCaught()
     {
         if (levelCompleted || playerCaught)
@@ -53,13 +65,31 @@ public class GameManager : MonoBehaviour
 
     public void CompleteLevel()
     {
+        CompleteLevel("");
+    }
+
+    public void CompleteLevel(string message)
+    {
         if (playerCaught || levelCompleted)
         {
             return;
         }
 
         levelCompleted = true;
-        temporaryMessage = "Level 1 complete. You redirected the beam and escaped. Press R to replay.";
+
+        if (!string.IsNullOrEmpty(message))
+        {
+            temporaryMessage = message;
+        }
+        else if (!string.IsNullOrEmpty(customCompleteMessage))
+        {
+            temporaryMessage = customCompleteMessage;
+        }
+        else
+        {
+            temporaryMessage = "Level complete. Press R to replay.";
+        }
+
         messageTimer = 999f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
@@ -73,16 +103,37 @@ public class GameManager : MonoBehaviour
 
     private void OnGUI()
     {
-        GUI.Box(new Rect(15f, 15f, 560f, 105f),
-            "LEVEL 1 OBJECTIVE:\n" +
-            "1. Approach the mirror and press Q / E to rotate it.\n" +
-            "2. Reflect the yellow beam into the red receiver to open the door.\n" +
-            "3. Avoid the AI guard and reach the green exit zone.\n" +
-            "Controls: WASD move, Mouse look, Space jump, R restart after win/loss.");
+        string title = customObjectiveTitle;
+        string body = customObjectiveBody;
+
+        if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(body))
+        {
+            string sceneName = SceneManager.GetActiveScene().name;
+            if (sceneName == "Level02")
+            {
+                title = "LEVEL 2 OBJECTIVE:";
+                body =
+                    "1. Use two mirrors to redirect the beam into the receiver.\n" +
+                    "2. The door opens only while the receiver is powered.\n" +
+                    "3. Avoid the AI guard and reach the green exit zone.\n" +
+                    "Controls: WASD move, Mouse look, Space jump, Q/E rotate mirrors, R restart after win/loss.";
+            }
+            else
+            {
+                title = "LEVEL 1 OBJECTIVE:";
+                body =
+                    "1. Approach the mirror and press Q / E to rotate it.\n" +
+                    "2. Reflect the yellow beam into the red receiver to open the door.\n" +
+                    "3. Avoid the AI guard and reach the green exit zone.\n" +
+                    "Controls: WASD move, Mouse look, Space jump, R restart after win/loss.";
+            }
+        }
+
+        GUI.Box(new Rect(15f, 15f, 620f, 112f), title + "\n" + body);
 
         if (messageTimer > 0f && !string.IsNullOrEmpty(temporaryMessage))
         {
-            GUI.Box(new Rect(Screen.width / 2f - 280f, Screen.height / 2f - 45f, 560f, 90f), temporaryMessage);
+            GUI.Box(new Rect(Screen.width / 2f - 300f, Screen.height / 2f - 48f, 600f, 96f), temporaryMessage);
         }
     }
 }

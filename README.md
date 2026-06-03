@@ -60,3 +60,21 @@ Textures improve the surface appearance, but they do not change the silhouette o
 3. Add door opening animation.
 4. Add sound effects for beam activation, door opening, and guard alert.
 5. Replace primitive visual placeholders with imported 3D models or modular environment assets.
+
+## Day 3 Update
+
+This project now contains two playable scenes:
+
+- `MainScene`: Level 1, single-mirror laser puzzle with AI guard.
+- `Level02`: Level 2, two-mirror laser puzzle with AI guard and final exit.
+
+Level 1 automatically transitions into Level 2 when the player reaches the green exit zone. The receiver now drives an animated security door instead of instantly hiding the door object.
+
+### Day 3 Test Flow
+
+1. Open `Assets/Scenes/MainScene.unity`.
+2. Press Play.
+3. Solve Level 1 and enter the green exit zone.
+4. The game loads `Level02` automatically.
+5. Use `Mirror_01` and `Mirror_02` to redirect the beam into the receiver.
+6. Reach the final green exit zone to complete the current game version.

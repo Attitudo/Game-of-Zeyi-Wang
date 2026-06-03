@@ -29,6 +29,7 @@ public static class LevelOneBootstrapper
         }
 
         EnsureGameManager();
+        ConfigureObjective();
         ConfigurePlayer();
         ConfigureLightPuzzle();
         CreateLevelGeometry();
@@ -46,6 +47,22 @@ public static class LevelOneBootstrapper
 
         GameObject manager = new GameObject("GameManager");
         manager.AddComponent<GameManager>();
+    }
+
+
+    private static void ConfigureObjective()
+    {
+        GameManager manager = Object.FindObjectOfType<GameManager>();
+        if (manager != null)
+        {
+            manager.ConfigureObjective(
+                "LEVEL 1 OBJECTIVE:",
+                "1. Rotate the mirror to guide the yellow beam into the receiver.\n" +
+                "2. The receiver powers the animated security door.\n" +
+                "3. Avoid the AI guard and reach the green exit zone.\n" +
+                "Controls: WASD move, Mouse look, Space jump, Q/E rotate mirror, R restart after win/loss.",
+                "Level 1 complete. Loading Level 2...");
+        }
     }
 
     private static void ConfigurePlayer()
@@ -112,6 +129,14 @@ public static class LevelOneBootstrapper
             door.transform.position = new Vector3(0f, 1.25f, 7.5f);
             door.transform.localScale = new Vector3(3f, 2.5f, 0.35f);
             door.SetActive(true);
+
+            DoorAnimator animator = door.GetComponent<DoorAnimator>();
+            if (animator == null)
+            {
+                animator = door.AddComponent<DoorAnimator>();
+            }
+            animator.openOffset = new Vector3(0f, 3f, 0f);
+            animator.openSpeed = 3f;
         }
 
         GameObject receiver = GameObject.Find("Receiver");
@@ -290,7 +315,9 @@ public static class LevelOneBootstrapper
         BoxCollider box = exitZone.AddComponent<BoxCollider>();
         box.isTrigger = true;
         box.size = new Vector3(3f, 2f, 1.2f);
-        exitZone.AddComponent<ExitZone>();
+        ExitZone exitScript = exitZone.AddComponent<ExitZone>();
+        exitScript.nextSceneName = "Level02";
+        exitScript.isFinalLevel = false;
     }
 
     private static void ConfigureLighting()
