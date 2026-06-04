@@ -109,14 +109,32 @@ public class GameManager : MonoBehaviour
         if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(body))
         {
             string sceneName = SceneManager.GetActiveScene().name;
-            if (sceneName == "Level02")
+            if (sceneName == "Level04")
+            {
+                title = "LEVEL 4 FINAL OBJECTIVE:";
+                body =
+                    "1. Collect two Energy Cores and the Master Keycard.\n" +
+                    "2. Use limited EMP charges against two AI guards.\n" +
+                    "3. Solve the four-mirror laser path and reach the final exit.\n" +
+                    "Controls: WASD move, Mouse look, Space jump, Q/E rotate mirrors, F fire EMP, R restart after win/loss.";
+            }
+            else if (sceneName == "Level03")
+            {
+                title = "LEVEL 3 OBJECTIVE:";
+                body =
+                    "1. Pick up the EMP Device and Security Keycard.\n" +
+                    "2. Use F to stun the guard when needed.\n" +
+                    "3. Solve the three-mirror path and reach the exit.\n" +
+                    "Controls: WASD move, Mouse look, Space jump, Q/E rotate mirrors, F fire EMP, R restart after win/loss.";
+            }
+            else if (sceneName == "Level02")
             {
                 title = "LEVEL 2 OBJECTIVE:";
                 body =
                     "1. Use two mirrors to redirect the beam into the receiver.\n" +
                     "2. The door opens only while the receiver is powered.\n" +
                     "3. Avoid the AI guard and reach the green exit zone.\n" +
-                    "Controls: WASD move, Mouse look, Space jump, Q/E rotate mirrors, R restart after win/loss.";
+                    "Controls: WASD move, Mouse look, Space jump, X toggle laser, Q/E rotate mirrors, R restart after win/loss.";
             }
             else
             {
@@ -125,7 +143,7 @@ public class GameManager : MonoBehaviour
                     "1. Approach the mirror and press Q / E to rotate it.\n" +
                     "2. Reflect the yellow beam into the red receiver to open the door.\n" +
                     "3. Avoid the AI guard and reach the green exit zone.\n" +
-                    "Controls: WASD move, Mouse look, Space jump, R restart after win/loss.";
+                    "Controls: WASD move, Mouse look, Space jump, Q/E rotate mirrors, R restart after win/loss.";
             }
         }
 

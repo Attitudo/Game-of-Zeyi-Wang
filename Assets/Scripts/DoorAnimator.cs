@@ -9,43 +9,48 @@ public class DoorAnimator : MonoBehaviour
     private Vector3 closedPosition;
     private Vector3 targetPosition;
     private bool initialized;
+    private bool openCommanded;
+
+    public bool IsOpen
+    {
+        get { return openCommanded; }
+    }
 
     private void Start()
     {
-        closedPosition = transform.position;
-        targetPosition = closedPosition;
-        initialized = true;
+        InitializeIfNeeded();
     }
 
     private void Update()
     {
-        if (!initialized)
-        {
-            return;
-        }
-
+        InitializeIfNeeded();
         transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * openSpeed);
     }
 
     public void OpenDoor()
     {
-        if (!initialized)
-        {
-            closedPosition = transform.position;
-            initialized = true;
-        }
-
+        InitializeIfNeeded();
+        openCommanded = true;
         targetPosition = closedPosition + openOffset;
     }
 
     public void CloseDoor()
     {
-        if (!initialized)
+        InitializeIfNeeded();
+        openCommanded = false;
+        targetPosition = closedPosition;
+    }
+
+    private void InitializeIfNeeded()
+    {
+        if (initialized)
         {
-            closedPosition = transform.position;
-            initialized = true;
+            return;
         }
 
+        closedPosition = transform.position;
         targetPosition = closedPosition;
+        initialized = true;
+        openCommanded = false;
     }
 }

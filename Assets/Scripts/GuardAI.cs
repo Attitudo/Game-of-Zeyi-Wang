@@ -24,11 +24,48 @@ public class GuardAI : MonoBehaviour
     public float catchDistance = 1.2f;
     public float searchTime = 2.5f;
 
+    [Header("Vision Cone Visual")]
+    public bool showVisionCone = true;
+    public int visionConeSegments = 24;
+    public float visionConeHeight = 0.04f;
+    public Color patrolConeColor = new Color(1f, 0.85f, 0f, 0.22f);
+    public Color chaseConeColor = new Color(1f, 0f, 0f, 0.30f);
+    public Color stunnedConeColor = new Color(0f, 1f, 1f, 0.20f);
+
+    [Header("Collision")]
+    public float guardHeight = 1.8f;
+    public float guardRadius = 0.38f;
+    public float gravity = -18f;
+
+    [Header("EMP Stun")]
+    public float stunTimer = 0f;
+
     private int currentPatrolIndex;
     private GuardState state = GuardState.Patrol;
     private float searchTimer;
+    private float verticalVelocity;
     private Vector3 lastKnownPlayerPosition;
     private Renderer guardRenderer;
+    private CharacterController characterController;
+    private Mesh visionConeMesh;
+    private MeshRenderer visionConeRenderer;
+
+    private void Awake()
+    {
+        characterController = GetComponent<CharacterController>();
+        if (characterController == null)
+        {
+            characterController = gameObject.AddComponent<CharacterController>();
+        }
+
+        characterController.height = guardHeight;
+        characterController.radius = guardRadius;
+        characterController.center = Vector3.zero;
+        characterController.stepOffset = 0.3f;
+        characterController.slopeLimit = 45f;
+        characterController.skinWidth = 0.05f;
+        characterController.detectCollisions = true;
+    }
 
     private void Start()
     {
@@ -43,10 +80,13 @@ public class GuardAI : MonoBehaviour
 
         guardRenderer = GetComponentInChildren<Renderer>();
         SetColor(Color.blue);
+        CreateVisionConeVisual();
     }
 
     private void Update()
     {
+        UpdateVisionConeVisual();
+
         if (player == null)
         {
             return;
@@ -54,6 +94,14 @@ public class GuardAI : MonoBehaviour
 
         if (GameManager.Instance != null && (GameManager.Instance.playerCaught || GameManager.Instance.levelCompleted))
         {
+            return;
+        }
+
+        if (stunTimer > 0f)
+        {
+            stunTimer -= Time.deltaTime;
+            ApplyGravityOnly();
+            SetColor(Color.cyan);
             return;
         }
 
@@ -78,18 +126,34 @@ public class GuardAI : MonoBehaviour
         }
     }
 
+    public void Stun(float seconds)
+    {
+        stunTimer = Mathf.Max(stunTimer, seconds);
+        searchTimer = seconds;
+        state = GuardState.Search;
+        SetColor(Color.cyan);
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.ShowMessage("EMP hit: guard stunned for " + seconds.ToString("0") + " seconds.", 2f);
+        }
+    }
+
     private void Patrol()
     {
         SetColor(Color.blue);
         if (patrolPoints == null || patrolPoints.Length == 0)
         {
+            ApplyGravityOnly();
             return;
         }
 
         Transform target = patrolPoints[currentPatrolIndex];
         MoveTowards(target.position, patrolSpeed);
 
-        if (Vector3.Distance(transform.position, target.position) <= waypointReachDistance)
+        Vector3 flatCurrent = new Vector3(transform.position.x, 0f, transform.position.z);
+        Vector3 flatTarget = new Vector3(target.position.x, 0f, target.position.z);
+        if (Vector3.Distance(flatCurrent, flatTarget) <= waypointReachDistance)
         {
             currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Length;
         }
@@ -113,6 +177,7 @@ public class GuardAI : MonoBehaviour
         {
             state = GuardState.Search;
             searchTimer = searchTime;
+            lastKnownPlayerPosition = player.position;
             SetColor(Color.yellow);
         }
     }
@@ -122,7 +187,9 @@ public class GuardAI : MonoBehaviour
         MoveTowards(lastKnownPlayerPosition, patrolSpeed);
         searchTimer -= Time.deltaTime;
 
-        if (searchTimer <= 0f || Vector3.Distance(transform.position, lastKnownPlayerPosition) <= waypointReachDistance)
+        Vector3 flatCurrent = new Vector3(transform.position.x, 0f, transform.position.z);
+        Vector3 flatTarget = new Vector3(lastKnownPlayerPosition.x, 0f, lastKnownPlayerPosition.z);
+        if (searchTimer <= 0f || Vector3.Distance(flatCurrent, flatTarget) <= waypointReachDistance)
         {
             state = GuardState.Patrol;
         }
@@ -130,8 +197,8 @@ public class GuardAI : MonoBehaviour
 
     private bool CanSeePlayer()
     {
-        Vector3 eyePosition = transform.position + Vector3.up * 0.6f;
-        Vector3 playerTarget = player.position + Vector3.up * 0.6f;
+        Vector3 eyePosition = transform.position + Vector3.up * 0.75f;
+        Vector3 playerTarget = player.position + Vector3.up * 0.75f;
         Vector3 directionToPlayer = playerTarget - eyePosition;
         float distance = directionToPlayer.magnitude;
 
@@ -146,9 +213,22 @@ public class GuardAI : MonoBehaviour
             return false;
         }
 
-        if (Physics.Raycast(eyePosition, directionToPlayer.normalized, out RaycastHit hit, viewDistance))
+        RaycastHit[] hits = Physics.RaycastAll(eyePosition, directionToPlayer.normalized, viewDistance, ~0, QueryTriggerInteraction.Ignore);
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+        foreach (RaycastHit hit in hits)
         {
-            return hit.collider.CompareTag("Player");
+            if (hit.collider.GetComponentInParent<GuardAI>() == this)
+            {
+                continue;
+            }
+
+            if (hit.collider.CompareTag("Player") || hit.collider.GetComponentInParent<PlayerController>() != null)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         return false;
@@ -156,16 +236,60 @@ public class GuardAI : MonoBehaviour
 
     private void MoveTowards(Vector3 target, float speed)
     {
-        target.y = transform.position.y;
-        Vector3 direction = target - transform.position;
+        Vector3 flatTarget = new Vector3(target.x, transform.position.y, target.z);
+        Vector3 direction = flatTarget - transform.position;
+        direction.y = 0f;
+
         if (direction.sqrMagnitude < 0.001f)
         {
+            ApplyGravityOnly();
             return;
         }
 
-        Vector3 movement = direction.normalized * speed * Time.deltaTime;
-        transform.position += movement;
-        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction.normalized), 10f * Time.deltaTime);
+        Vector3 normalizedDirection = direction.normalized;
+        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(normalizedDirection), 10f * Time.deltaTime);
+
+        Vector3 horizontalMove = normalizedDirection * speed * Time.deltaTime;
+        MoveWithCollision(horizontalMove);
+    }
+
+    private void MoveWithCollision(Vector3 horizontalMove)
+    {
+        if (characterController != null && characterController.enabled)
+        {
+            if (characterController.isGrounded && verticalVelocity < 0f)
+            {
+                verticalVelocity = -1f;
+            }
+            else
+            {
+                verticalVelocity += gravity * Time.deltaTime;
+            }
+
+            Vector3 finalMove = horizontalMove + Vector3.up * verticalVelocity * Time.deltaTime;
+            characterController.Move(finalMove);
+        }
+        else
+        {
+            transform.position += horizontalMove;
+        }
+    }
+
+    private void ApplyGravityOnly()
+    {
+        if (characterController != null && characterController.enabled)
+        {
+            if (characterController.isGrounded && verticalVelocity < 0f)
+            {
+                verticalVelocity = -1f;
+            }
+            else
+            {
+                verticalVelocity += gravity * Time.deltaTime;
+            }
+
+            characterController.Move(Vector3.up * verticalVelocity * Time.deltaTime);
+        }
     }
 
     private void SetColor(Color color)
@@ -174,6 +298,118 @@ public class GuardAI : MonoBehaviour
         {
             guardRenderer.material.color = color;
         }
+    }
+
+    private void CreateVisionConeVisual()
+    {
+        if (!showVisionCone)
+        {
+            return;
+        }
+
+        Transform existing = transform.Find("VisionConeVisual");
+        GameObject coneObject = existing != null ? existing.gameObject : new GameObject("VisionConeVisual");
+        coneObject.transform.SetParent(transform);
+        coneObject.transform.localPosition = Vector3.zero;
+        coneObject.transform.localRotation = Quaternion.identity;
+        coneObject.transform.localScale = Vector3.one;
+
+        MeshFilter meshFilter = coneObject.GetComponent<MeshFilter>();
+        if (meshFilter == null)
+        {
+            meshFilter = coneObject.AddComponent<MeshFilter>();
+        }
+
+        visionConeRenderer = coneObject.GetComponent<MeshRenderer>();
+        if (visionConeRenderer == null)
+        {
+            visionConeRenderer = coneObject.AddComponent<MeshRenderer>();
+        }
+
+        visionConeMesh = new Mesh();
+        visionConeMesh.name = "Guard Vision Cone Mesh";
+        meshFilter.mesh = visionConeMesh;
+
+        Shader shader = Shader.Find("Unlit/Transparent");
+        if (shader == null)
+        {
+            shader = Shader.Find("Sprites/Default");
+        }
+
+        Material material = new Material(shader);
+        material.color = patrolConeColor;
+        material.renderQueue = 3000;
+        visionConeRenderer.material = material;
+        visionConeRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        visionConeRenderer.receiveShadows = false;
+    }
+
+    private void UpdateVisionConeVisual()
+    {
+        if (!showVisionCone)
+        {
+            if (visionConeRenderer != null)
+            {
+                visionConeRenderer.enabled = false;
+            }
+            return;
+        }
+
+        if (visionConeMesh == null || visionConeRenderer == null)
+        {
+            CreateVisionConeVisual();
+        }
+
+        if (visionConeMesh == null || visionConeRenderer == null)
+        {
+            return;
+        }
+
+        visionConeRenderer.enabled = true;
+
+        Color coneColor = patrolConeColor;
+        if (stunTimer > 0f)
+        {
+            coneColor = stunnedConeColor;
+        }
+        else if (state == GuardState.Chase)
+        {
+            coneColor = chaseConeColor;
+        }
+
+        visionConeRenderer.material.color = coneColor;
+
+        int segments = Mathf.Max(6, visionConeSegments);
+        Vector3[] vertices = new Vector3[segments + 2];
+        // Use double-sided triangles so the cone is visible from normal camera angles.
+        int[] triangles = new int[segments * 6];
+
+        vertices[0] = new Vector3(0f, visionConeHeight, 0f);
+        for (int i = 0; i <= segments; i++)
+        {
+            float t = i / (float)segments;
+            float angle = -viewAngle * 0.5f + viewAngle * t;
+            float radians = angle * Mathf.Deg2Rad;
+            vertices[i + 1] = new Vector3(Mathf.Sin(radians) * viewDistance, visionConeHeight, Mathf.Cos(radians) * viewDistance);
+        }
+
+        for (int i = 0; i < segments; i++)
+        {
+            int triangleIndex = i * 6;
+            triangles[triangleIndex] = 0;
+            triangles[triangleIndex + 1] = i + 1;
+            triangles[triangleIndex + 2] = i + 2;
+
+            triangles[triangleIndex + 3] = 0;
+            triangles[triangleIndex + 4] = i + 2;
+            triangles[triangleIndex + 5] = i + 1;
+        }
+
+        visionConeMesh.Clear();
+        visionConeMesh.vertices = vertices;
+        visionConeMesh.triangles = triangles;
+        visionConeMesh.RecalculateNormals();
+        visionConeMesh.RecalculateBounds();
     }
 
     private void OnDrawGizmosSelected()

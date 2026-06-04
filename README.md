@@ -1,80 +1,66 @@
 # Mirror Puzzle Guard
 
-Unity version: 2022.3.62f3c1
+A Unity 2022.3 3D puzzle game about redirecting laser beams with mirrors while avoiding AI security guards.
 
 ## Current Version
 
-This is a playable Level 1 prototype for a first-person mirror-reflection puzzle game with an AI guard.
+This version contains four playable levels. All main level geometry and gameplay objects are saved directly inside the Unity scene files instead of being generated only at runtime. This makes the project easier to inspect, edit, and present.
 
-Completed features:
+1. **Level 1** - Basic mirror reflection puzzle with one AI guard.
+2. **Level 2** - Two-mirror laser puzzle with a manual laser switch. The door starts closed, the laser starts off, and the mirror angles are intentionally scrambled.
+3. **Level 3** - Three-mirror puzzle, Security Keycard pickup, EMP Device weapon, and a stronger guard route.
+4. **Level 4** - Final challenge with four mirrors, two Energy Cores, a Master Keycard, two AI guards, and limited EMP charges.
 
-1. First-person player movement: WASD movement, mouse look, and Space jump.
-2. Mirror-based light reflection: the beam is drawn with a LineRenderer and reflects from objects tagged as `Mirror`.
-3. Receiver-door puzzle: when the beam reaches the `Receiver`, the security door opens. If the beam moves away, the door closes again.
-4. Mirror interaction: approach the mirror and press `Q / E` to rotate it.
-5. AI guard: the guard patrols, detects the player with a vision cone, chases the player, and triggers a failure state when close enough.
-6. Win condition: after opening the door, reach the green exit zone to complete the level.
-7. Runtime level construction: the project automatically builds a polished Level 1 test chamber at play time, including walls, floor tiles, props, cover objects, a door frame, a mirror pedestal, a light emitter, and a receiver stand.
+## Controls
 
-## How to Run
+- `WASD` - Move
+- `Mouse` - Look around
+- `Space` - Jump
+- `Q / E` - Rotate a nearby mirror
+- `X` - Toggle the Level 2 laser switch
+- `F` - Fire EMP stun weapon after picking up the EMP Device
+- `R` - Restart after win/loss
+- `Esc` - Unlock mouse cursor
 
-1. Open the `Project` folder with Unity Hub.
-2. Open `Assets/Scenes/MainScene.unity`.
-3. Click Play.
-4. Controls:
-   - `WASD`: Move
-   - `Mouse`: Look around
-   - `Space`: Jump
-   - `Q / E`: Rotate the mirror when close to it
-   - `R`: Restart after winning or losing
-   - `Esc`: Unlock the mouse cursor
+## Gameplay Systems
 
-## Level 1 Gameplay
+- Persistent scene-based level layouts
+- Mirror-based laser reflection
+- Receiver-powered animated security doors
+- Level 2 manual laser switch
+- AI guards with patrol, chase, search, and EMP stun states
+- Inventory pickups: Security Keycards, Energy Cores, EMP Device, EMP Charges
+- Item-locked exit zones
+- Four-level scene progression
 
-The mirror is not aligned correctly at the start. The player must approach the mirror and rotate it until the yellow beam reflects into the red receiver. When the receiver turns green, the security door opens. The player then needs to avoid the AI guard and enter the green exit zone.
+## How to Open
 
-## Main Scripts
+1. Open Unity Hub.
+2. Choose **Open**.
+3. Select this project folder.
+4. Open `Assets/Scenes/MainScene.unity`.
+5. Press Play.
 
-- `LightReflection.cs`: Handles beam emission, raycast collision, mirror reflection, and receiver activation.
-- `MirrorController.cs`: Allows the player to rotate the mirror when nearby.
-- `Receiver.cs`: Receives the beam and controls the security door.
-- `PlayerController.cs`: Handles first-person movement and camera control.
-- `GuardAI.cs`: Handles guard patrol, vision detection, chasing, and searching.
-- `GameManager.cs`: Handles level hints, failure state, win state, and restart.
-- `ExitZone.cs`: Triggers level completion.
-- `LevelOneBootstrapper.cs`: Builds the Level 1 test chamber and visual polish at runtime.
+## Build Settings
 
-## Visual Direction
+The following scenes are included in Build Settings:
 
-This prototype currently uses Unity primitive objects with improved proportions, materials, lighting, and layout. For the next visual upgrade, there are two possible paths:
+1. `Assets/Scenes/MainScene.unity`
+2. `Assets/Scenes/Level02.unity`
+3. `Assets/Scenes/Level03.unity`
+4. `Assets/Scenes/Level04.unity`
 
-1. Add textures and materials for walls, floors, metal frames, glass, warning signs, and the security door.
-2. Replace primitive shapes with modular 3D assets, such as wall panels, sci-fi doors, laboratory props, and a proper guard model.
+## GitHub Commit Suggestion
 
-Textures improve the surface appearance, but they do not change the silhouette of an object. Better modeling requires improved geometry, modular assets, or imported 3D models.
+```bash
+git add .
+git commit -m "Make levels persistent and add advanced level challenges"
+git push
+```
 
-## Suggested Next Commits
 
-1. Add Level 2 with two mirrors and multiple reflections.
-2. Replace the temporary OnGUI hints with a Canvas and TextMeshPro UI.
-3. Add door opening animation.
-4. Add sound effects for beam activation, door opening, and guard alert.
-5. Replace primitive visual placeholders with imported 3D models or modular environment assets.
+## Day 5 Fixes
 
-## Day 3 Update
-
-This project now contains two playable scenes:
-
-- `MainScene`: Level 1, single-mirror laser puzzle with AI guard.
-- `Level02`: Level 2, two-mirror laser puzzle with AI guard and final exit.
-
-Level 1 automatically transitions into Level 2 when the player reaches the green exit zone. The receiver now drives an animated security door instead of instantly hiding the door object.
-
-### Day 3 Test Flow
-
-1. Open `Assets/Scenes/MainScene.unity`.
-2. Press Play.
-3. Solve Level 1 and enter the green exit zone.
-4. The game loads `Level02` automatically.
-5. Use `Mirror_01` and `Mirror_02` to redirect the beam into the receiver.
-6. Reach the final green exit zone to complete the current game version.
+- Guards now use collision-aware movement and should not pass through level geometry.
+- EMP now has a center crosshair, wider hit detection, and aim assist.
+- Level 1 laser alignment is easier because mirror rotation is finer and receiver detection is more forgiving.

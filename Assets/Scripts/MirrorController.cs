@@ -3,7 +3,7 @@ using UnityEngine;
 public class MirrorController : MonoBehaviour
 {
     [Header("Mirror Settings")]
-    public float rotateStep = 15f;
+    public float rotateStep = 5f;
     public float interactDistance = 3f;
     public KeyCode rotateLeftKey = KeyCode.Q;
     public KeyCode rotateRightKey = KeyCode.E;
