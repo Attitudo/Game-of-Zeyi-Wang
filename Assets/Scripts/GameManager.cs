@@ -19,6 +19,7 @@ public class GameManager : MonoBehaviour
 
     private void Awake()
     {
+        ApplyDungeonAtmosphere();
         if (Instance == null)
         {
             Instance = this;
@@ -27,6 +28,15 @@ public class GameManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
+    }
+
+    private void ApplyDungeonAtmosphere()
+    {
+        RenderSettings.fog = true;
+        RenderSettings.fogColor = new Color(0.10f, 0.09f, 0.08f);
+        RenderSettings.fogDensity = 0.018f;
+        RenderSettings.ambientLight = new Color(0.18f, 0.14f, 0.10f);
+        RenderSettings.ambientIntensity = 0.65f;
     }
 
     private void Update()
@@ -111,7 +121,7 @@ public class GameManager : MonoBehaviour
             string sceneName = SceneManager.GetActiveScene().name;
             if (sceneName == "Level04")
             {
-                title = "LEVEL 4 FINAL OBJECTIVE:";
+                title = "LEVEL 4 - ANCIENT CORE CHAMBER:";
                 body =
                     "1. Collect two Energy Cores and the Master Keycard.\n" +
                     "2. Use limited EMP charges against two AI guards.\n" +
@@ -120,7 +130,7 @@ public class GameManager : MonoBehaviour
             }
             else if (sceneName == "Level03")
             {
-                title = "LEVEL 3 OBJECTIVE:";
+                title = "LEVEL 3 - GUARD VAULT:";
                 body =
                     "1. Pick up the EMP Device and Security Keycard.\n" +
                     "2. Use F to stun the guard when needed.\n" +
@@ -129,7 +139,7 @@ public class GameManager : MonoBehaviour
             }
             else if (sceneName == "Level02")
             {
-                title = "LEVEL 2 OBJECTIVE:";
+                title = "LEVEL 2 - DUNGEON SWITCH ROOM:";
                 body =
                     "1. Use two mirrors to redirect the beam into the receiver.\n" +
                     "2. The door opens only while the receiver is powered.\n" +
@@ -138,7 +148,7 @@ public class GameManager : MonoBehaviour
             }
             else
             {
-                title = "LEVEL 1 OBJECTIVE:";
+                title = "LEVEL 1 - CASTLE ENTRANCE:";
                 body =
                     "1. Approach the mirror and press Q / E to rotate it.\n" +
                     "2. Reflect the yellow beam into the red receiver to open the door.\n" +

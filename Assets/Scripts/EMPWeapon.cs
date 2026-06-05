@@ -18,11 +18,14 @@ public class EMPWeapon : MonoBehaviour
     private float cooldownTimer;
     private PlayerInventory inventory;
     private Camera playerCamera;
+    private Transform empGunVisual;
 
     private void Start()
     {
         inventory = GetComponent<PlayerInventory>();
         playerCamera = Camera.main;
+        FindEmpGunVisual();
+        UpdateEmpGunVisual();
     }
 
     private void Update()
@@ -32,9 +35,44 @@ public class EMPWeapon : MonoBehaviour
             cooldownTimer -= Time.deltaTime;
         }
 
+        UpdateEmpGunVisual();
+
         if (Input.GetKeyDown(fireKey))
         {
             Fire();
+        }
+    }
+
+    private void FindEmpGunVisual()
+    {
+        if (empGunVisual != null)
+        {
+            return;
+        }
+
+        if (playerCamera == null)
+        {
+            playerCamera = Camera.main;
+        }
+
+        if (playerCamera != null)
+        {
+            empGunVisual = playerCamera.transform.Find("EMP_Blaster_Visual");
+        }
+    }
+
+    private void UpdateEmpGunVisual()
+    {
+        if (inventory == null)
+        {
+            inventory = GetComponent<PlayerInventory>();
+        }
+
+        FindEmpGunVisual();
+
+        if (empGunVisual != null)
+        {
+            empGunVisual.gameObject.SetActive(inventory != null && inventory.hasEmpDevice);
         }
     }
 
