@@ -119,13 +119,31 @@ public class GameManager : MonoBehaviour
         if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(body))
         {
             string sceneName = SceneManager.GetActiveScene().name;
-            if (sceneName == "Level04")
+            if (sceneName == "Level06")
+            {
+                title = "LEVEL 6 - FINAL MIRROR CATACOMB:";
+                body =
+                    "1. Collect the Master Keycard, three Energy Cores, and the EMP Device.\n" +
+                    "2. Solve the six-mirror laser route around multiple blockers.\n" +
+                    "3. Use EMP carefully to survive the final guard patrols.\n" +
+                    "Controls: WASD move, Mouse look, Space jump, Q/E rotate mirrors, F fire EMP, R restart after win/loss.";
+            }
+            else if (sceneName == "Level05")
+            {
+                title = "LEVEL 5 - SEALED CRYPT MAZE:";
+                body =
+                    "1. Collect the Crypt Keycard, two Energy Cores, and the EMP Device.\n" +
+                    "2. Route the laser through five mirrors; direct paths are blocked.\n" +
+                    "3. Open the door and escape through the green exit zone.\n" +
+                    "Controls: WASD move, Mouse look, Space jump, Q/E rotate mirrors, F fire EMP, R restart after win/loss.";
+            }
+            else if (sceneName == "Level04")
             {
                 title = "LEVEL 4 - ANCIENT CORE CHAMBER:";
                 body =
                     "1. Collect two Energy Cores and the Master Keycard.\n" +
                     "2. Use limited EMP charges against two AI guards.\n" +
-                    "3. Solve the four-mirror laser path and reach the final exit.\n" +
+                    "3. Solve the four-mirror laser path and reach the next dungeon gate.\n" +
                     "Controls: WASD move, Mouse look, Space jump, Q/E rotate mirrors, F fire EMP, R restart after win/loss.";
             }
             else if (sceneName == "Level03")
