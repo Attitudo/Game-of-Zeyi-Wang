@@ -55,6 +55,7 @@ public class SceneExpansionAndLevelConfig : MonoBehaviour
         }
 
         ApplyCharacterModels();
+        HideDecorativeClutter();
         CacheMaterials(layout.existingPrefix);
         EnsureMirrorCount(layout.mirrors.Length);
         RepositionGameplayObjects(layout);
@@ -85,6 +86,42 @@ public class SceneExpansionAndLevelConfig : MonoBehaviour
             if (guard != null)
             {
                 StableCharacterVisuals.ApplyGuard(guard.gameObject);
+            }
+        }
+    }
+
+    private void HideDecorativeClutter()
+    {
+        // The uploaded base scene already has the desired terrain style.
+        // Remove visual clutter only: candles/torches, decorative stone columns, banners and supply crates.
+        // Gameplay terrain, puzzle blockers, walls, doors, mirrors and pickups are preserved.
+        string[] clutterKeywords =
+        {
+            "DungeonTheme_Props",
+            "Torch_",
+            "Candle",
+            "StoneColumn",
+            "ColumnCap",
+            "CastleBanner",
+            "WoodenSupplyCrate"
+        };
+
+        Transform[] transforms = Object.FindObjectsOfType<Transform>();
+        foreach (Transform t in transforms)
+        {
+            if (t == null || t.gameObject == null)
+            {
+                continue;
+            }
+
+            string name = t.gameObject.name;
+            foreach (string keyword in clutterKeywords)
+            {
+                if (name.Contains(keyword))
+                {
+                    t.gameObject.SetActive(false);
+                    break;
+                }
             }
         }
     }
@@ -325,11 +362,16 @@ public class SceneExpansionAndLevelConfig : MonoBehaviour
         SetPosition("LightSource", layout.light);
         LookAtHorizontal("LightSource", layout.mirrors.Length > 0 ? layout.mirrors[0] : layout.receiver);
 
+        Vector3 previousMirrorPathPoint = layout.light;
         for (int i = 0; i < layout.mirrors.Length; i++)
         {
             string name = "Mirror_" + (i + 1).ToString("00");
             SetPosition(name, layout.mirrors[i]);
-            SetYaw(name, layout.mirrorYaws.Length > i ? layout.mirrorYaws[i] : 45f);
+
+            Vector3 nextMirrorPathPoint = (i == layout.mirrors.Length - 1) ? layout.receiver : layout.mirrors[i + 1];
+            float solvedYaw = CalculateMirrorYaw(previousMirrorPathPoint, layout.mirrors[i], nextMirrorPathPoint);
+            SetYaw(name, solvedYaw);
+            previousMirrorPathPoint = layout.mirrors[i];
         }
 
         // Move unused mirrors far outside the level if the copied scene had more than this level needs.
@@ -431,6 +473,15 @@ public class SceneExpansionAndLevelConfig : MonoBehaviour
 
     private void CreateExpertBlockers(LevelLayout layout)
     {
+        // Keep the required Level 2 blocker, because it forces the beam to use both mirrors.
+        // In later levels the previous large runtime walls could accidentally cut the only valid
+        // reflected beam route. Difficulty is now provided by longer mirror chains, pickups and guards,
+        // not by unsolvable blockers placed across the optical path.
+        if (layout.runtimePrefix != "L2")
+        {
+            return;
+        }
+
         if (layout.blockerPositions == null || layout.blockerScales == null)
         {
             return;
@@ -569,6 +620,32 @@ public class SceneExpansionAndLevelConfig : MonoBehaviour
             go.transform.position = position;
             go.transform.localScale = scale;
         }
+    }
+
+
+    private float CalculateMirrorYaw(Vector3 previousPoint, Vector3 mirrorPoint, Vector3 nextPoint)
+    {
+        Vector3 incomingDirection = mirrorPoint - previousPoint;
+        incomingDirection.y = 0f;
+        incomingDirection.Normalize();
+
+        Vector3 outgoingDirection = nextPoint - mirrorPoint;
+        outgoingDirection.y = 0f;
+        outgoingDirection.Normalize();
+
+        Vector3 mirrorNormal = incomingDirection - outgoingDirection;
+        mirrorNormal.y = 0f;
+
+        if (mirrorNormal.sqrMagnitude < 0.0001f)
+        {
+            mirrorNormal = Vector3.forward;
+        }
+        else
+        {
+            mirrorNormal.Normalize();
+        }
+
+        return Mathf.Atan2(mirrorNormal.x, mirrorNormal.z) * Mathf.Rad2Deg;
     }
 
     private void SetYaw(string name, float yaw)
