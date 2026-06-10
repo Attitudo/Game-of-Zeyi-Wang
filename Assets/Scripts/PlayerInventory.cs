@@ -67,23 +67,36 @@ public class PlayerInventory : MonoBehaviour
 
     private void OnGUI()
     {
+        int reflected = 0;
+        int required = 0;
+        if (LightReflection.Instance != null)
+        {
+            reflected = LightReflection.Instance.CurrentMirrorReflections;
+            required = LightReflection.Instance.RequiredMirrorReflections;
+        }
+
         string status =
-            "INVENTORY\n" +
+            "<color=#FFD45A>COUNTER</color>\n" +
             "Keycards: " + keycards + "\n" +
             "Energy Cores: " + energyCores + "\n" +
             "EMP Device: " + (hasEmpDevice ? "Yes" : "No") + "\n" +
-            "EMP Charges: " + empCharges;
+            "EMP Charges: " + empCharges + "\n" +
+            "<color=#8DFF8D>Reflections: " + reflected + " / " + required + "</color>";
 
-        GUI.Box(new Rect(Screen.width - 220f, 15f, 200f, 112f), status);
+        float counterWidth = 265f;
+        float counterHeight = Mathf.Clamp(CartoonGUI.GetWrappedBoxHeight(status, counterWidth, true), 150f, 205f);
+        CartoonGUI.DrawSmallBox(new Rect(Screen.width - counterWidth - 15f, 15f, counterWidth, counterHeight), status);
 
         if (hasEmpDevice)
         {
-            GUI.Box(new Rect(Screen.width - 260f, Screen.height - 72f, 240f, 48f), "Weapon: Press F to fire EMP stun.");
+            CartoonGUI.DrawSmallBox(new Rect(Screen.width - 270f, Screen.height - 78f, 250f, 56f), "Weapon: Press F to fire EMP stun.");
         }
 
         if (pickupMessageTimer > 0f && !string.IsNullOrEmpty(pickupMessage))
         {
-            GUI.Box(new Rect(Screen.width / 2f - 230f, 145f, 460f, 42f), pickupMessage);
+            float pickupWidth = Mathf.Min(520f, Screen.width * 0.62f);
+            float pickupHeight = Mathf.Clamp(CartoonGUI.GetWrappedBoxHeight(pickupMessage, pickupWidth), 54f, 110f);
+            CartoonGUI.DrawCenterBox(new Rect(Screen.width / 2f - pickupWidth / 2f, 205f, pickupWidth, pickupHeight), pickupMessage);
         }
     }
 }

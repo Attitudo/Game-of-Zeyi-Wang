@@ -27,7 +27,10 @@ public class MirrorController : MonoBehaviour
             return;
         }
 
-        playerInRange = Vector3.Distance(transform.position, player.position) <= interactDistance;
+        MovableMirrorRail rail = GetComponent<MovableMirrorRail>();
+        playerInRange = rail != null
+            ? rail.IsThisTheActiveRailForPlayer(player)
+            : IsClosestStandaloneMirror();
         if (!playerInRange)
         {
             return;
@@ -42,6 +45,40 @@ public class MirrorController : MonoBehaviour
         {
             RotateMirror(rotateStep);
         }
+    }
+
+    private bool IsClosestStandaloneMirror()
+    {
+        if (player == null)
+        {
+            return false;
+        }
+
+        MirrorController[] mirrors = Object.FindObjectsOfType<MirrorController>();
+        MirrorController best = null;
+        float bestDistance = float.MaxValue;
+
+        foreach (MirrorController mirror in mirrors)
+        {
+            if (mirror == null || !mirror.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            if (mirror.GetComponent<MovableMirrorRail>() != null)
+            {
+                continue;
+            }
+
+            float distance = Vector3.Distance(mirror.transform.position, player.position);
+            if (distance <= mirror.interactDistance && distance < bestDistance)
+            {
+                bestDistance = distance;
+                best = mirror;
+            }
+        }
+
+        return best == this;
     }
 
     private void RotateMirror(float angle)
@@ -61,6 +98,9 @@ public class MirrorController : MonoBehaviour
             return;
         }
 
-        GUI.Box(new Rect(Screen.width / 2f - 220f, Screen.height - 90f, 440f, 45f), "Mirror control: press Q / E to rotate the mirror and redirect the beam.");
+        string prompt = "Mirror control: press Q / E to rotate the mirror and redirect the beam.";
+        float w = Mathf.Min(500f, Screen.width * 0.62f);
+        float h = Mathf.Clamp(CartoonGUI.GetWrappedBoxHeight(prompt, w), 56f, 95f);
+        CartoonGUI.DrawCenterBox(new Rect(Screen.width / 2f - w / 2f, Screen.height - h - 36f, w, h), prompt);
     }
 }

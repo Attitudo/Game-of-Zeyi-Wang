@@ -41,6 +41,14 @@ public class DoorAnimator : MonoBehaviour
         targetPosition = closedPosition;
     }
 
+    public void SnapClosedAtCurrentPosition()
+    {
+        closedPosition = transform.position;
+        targetPosition = closedPosition;
+        initialized = true;
+        openCommanded = false;
+    }
+
     private void InitializeIfNeeded()
     {
         if (initialized)

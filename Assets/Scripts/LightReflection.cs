@@ -21,6 +21,26 @@ public class LightReflection : MonoBehaviour
     [Tooltip("Extra tolerance used when the beam visually touches the receiver but the exact ray misses the small collider.")]
     public float receiverActivationRadius = 1.0f;
 
+    [Header("Puzzle Rule")]
+    [Tooltip("Receiver only powers on when the beam has reflected from exactly this many different mirrors.")]
+    public int requiredMirrorReflections = 1;
+
+    [Tooltip("If true, extra mirror reflections will not count as a valid solution. This keeps decoy mirrors misleading instead of useful.")]
+    public bool requireExactMirrorReflectionCount = true;
+
+    private int mirrorReflectionsThisPath;
+    private readonly HashSet<int> mirrorsHitThisPath = new HashSet<int>();
+
+    public int CurrentMirrorReflections
+    {
+        get { return mirrorReflectionsThisPath; }
+    }
+
+    public int RequiredMirrorReflections
+    {
+        get { return requiredMirrorReflections; }
+    }
+
     private readonly HashSet<Receiver> receiversHitThisFrame = new HashSet<Receiver>();
     private readonly List<Receiver> receiversPoweredLastFrame = new List<Receiver>();
 
@@ -88,6 +108,8 @@ public class LightReflection : MonoBehaviour
 
             receiversHitThisFrame.Clear();
             receiversPoweredLastFrame.Clear();
+            mirrorsHitThisPath.Clear();
+            mirrorReflectionsThisPath = 0;
         }
     }
 
@@ -106,6 +128,8 @@ public class LightReflection : MonoBehaviour
         }
 
         receiversHitThisFrame.Clear();
+        mirrorsHitThisPath.Clear();
+        mirrorReflectionsThisPath = 0;
 
         Vector3 currentPosition = sourceLight.transform.position;
         Vector3 currentDirection = sourceLight.transform.forward.normalized;
@@ -119,7 +143,7 @@ public class LightReflection : MonoBehaviour
             Vector3 segmentEnd = hasHit ? hit.point : currentPosition + currentDirection * maxDistance;
 
             AddLinePoint(segmentEnd);
-            ActivateReceiversNearBeamSegment(currentPosition, segmentEnd);
+            ActivateReceiversNearBeamSegment(currentPosition, segmentEnd, mirrorReflectionsThisPath);
 
             if (!hasHit)
             {
@@ -128,6 +152,7 @@ public class LightReflection : MonoBehaviour
 
             if (IsMirrorSurface(hit.collider))
             {
+                RegisterMirrorReflection(hit.collider);
                 currentDirection = Vector3.Reflect(currentDirection, hit.normal).normalized;
                 currentPosition = hit.point + currentDirection * surfaceOffset;
                 continue;
@@ -136,7 +161,7 @@ public class LightReflection : MonoBehaviour
             Receiver hitReceiver = GetReceiver(hit.collider);
             if (hitReceiver != null)
             {
-                PowerReceiver(hitReceiver);
+                TryPowerReceiver(hitReceiver, mirrorReflectionsThisPath);
             }
 
             // Receiver or obstacle: the laser stops here.
@@ -296,7 +321,7 @@ public class LightReflection : MonoBehaviour
         return null;
     }
 
-    private void ActivateReceiversNearBeamSegment(Vector3 start, Vector3 end)
+    private void ActivateReceiversNearBeamSegment(Vector3 start, Vector3 end, int mirrorCountForThisSegment)
     {
         Receiver[] receivers = Object.FindObjectsOfType<Receiver>();
         foreach (Receiver receiver in receivers)
@@ -310,7 +335,7 @@ public class LightReflection : MonoBehaviour
             float distance = Vector3.Distance(closestPoint, receiver.transform.position);
             if (distance <= receiverActivationRadius)
             {
-                PowerReceiver(receiver);
+                TryPowerReceiver(receiver, mirrorCountForThisSegment);
             }
         }
     }
@@ -327,6 +352,43 @@ public class LightReflection : MonoBehaviour
         float t = Vector3.Dot(point - start, segment) / segmentLengthSquared;
         t = Mathf.Clamp01(t);
         return start + segment * t;
+    }
+
+    private void RegisterMirrorReflection(Collider mirrorCollider)
+    {
+        if (mirrorCollider == null)
+        {
+            return;
+        }
+
+        Transform mirrorRoot = mirrorCollider.transform;
+        MirrorController controller = mirrorCollider.GetComponentInParent<MirrorController>();
+        if (controller != null)
+        {
+            mirrorRoot = controller.transform;
+        }
+
+        int id = mirrorRoot.GetInstanceID();
+        if (mirrorsHitThisPath.Add(id))
+        {
+            mirrorReflectionsThisPath = mirrorsHitThisPath.Count;
+        }
+    }
+
+    private void TryPowerReceiver(Receiver receiver, int mirrorCount)
+    {
+        bool validCount = requireExactMirrorReflectionCount
+            ? mirrorCount == requiredMirrorReflections
+            : mirrorCount >= requiredMirrorReflections;
+
+        if (!validCount)
+        {
+            // Beam reached the receiver with the wrong mirror count.
+            // Too few mirrors is too easy; too many mirrors means the player used a decoy route.
+            return;
+        }
+
+        PowerReceiver(receiver);
     }
 
     private void PowerReceiver(Receiver receiver)

@@ -10,7 +10,9 @@ public class LaserSwitch : MonoBehaviour
     public KeyCode interactKey = KeyCode.X;
 
     private Transform player;
-    private Renderer switchRenderer;
+    private Renderer baseRenderer;
+    private Renderer indicatorRenderer;
+    private Transform leverTransform;
 
     private void Start()
     {
@@ -20,8 +22,36 @@ public class LaserSwitch : MonoBehaviour
             player = playerObject.transform;
         }
 
-        switchRenderer = GetComponentInChildren<Renderer>();
+        CacheVisualParts();
         ApplyState();
+    }
+
+    private void CacheVisualParts()
+    {
+        Transform basePart = transform.Find("SwitchBase");
+        if (basePart != null) baseRenderer = basePart.GetComponent<Renderer>();
+
+        Transform leverPart = transform.Find("SwitchLever");
+        if (leverPart != null)
+        {
+            leverTransform = leverPart;
+            if (indicatorRenderer == null)
+            {
+                indicatorRenderer = leverPart.GetComponent<Renderer>();
+            }
+        }
+
+        Transform indicatorPart = transform.Find("SwitchIndicator");
+        if (indicatorPart != null)
+        {
+            indicatorRenderer = indicatorPart.GetComponent<Renderer>();
+        }
+
+        if (baseRenderer == null)
+        {
+            Renderer[] rs = GetComponentsInChildren<Renderer>();
+            if (rs.Length > 0) baseRenderer = rs[0];
+        }
     }
 
     private void Update()
@@ -44,7 +74,7 @@ public class LaserSwitch : MonoBehaviour
 
         if (GameManager.Instance != null)
         {
-            GameManager.Instance.ShowMessage(isOn ? "Laser switch activated." : "Laser switch deactivated.", 2f);
+            GameManager.Instance.ShowMessage(isOn ? "Power switch activated." : "Power switch deactivated.", 2f);
         }
     }
 
@@ -60,9 +90,20 @@ public class LaserSwitch : MonoBehaviour
             sourceLight.enabled = isOn;
         }
 
-        if (switchRenderer != null)
+        if (baseRenderer != null)
         {
-            switchRenderer.material.color = isOn ? Color.green : Color.red;
+            baseRenderer.material.color = new Color(0.18f, 0.18f, 0.18f);
+        }
+
+        if (indicatorRenderer != null)
+        {
+            indicatorRenderer.material.color = isOn ? new Color(0.15f, 0.85f, 0.25f) : new Color(0.85f, 0.15f, 0.15f);
+        }
+
+        if (leverTransform != null)
+        {
+            // Use a sideways lever motion so the switch looks more like a real toggle.
+            leverTransform.localRotation = Quaternion.Euler(0f, 0f, isOn ? -35f : 35f);
         }
     }
 
@@ -75,7 +116,10 @@ public class LaserSwitch : MonoBehaviour
 
         if (Vector3.Distance(transform.position, player.position) <= interactDistance)
         {
-            GUI.Box(new Rect(Screen.width / 2f - 210f, Screen.height - 145f, 420f, 42f), "Laser switch: press X to toggle the emitter.");
+            string prompt = "Switch: press X to power the lamp emitter.";
+            float w = Mathf.Min(470f, Screen.width * 0.58f);
+            float h = Mathf.Clamp(CartoonGUI.GetWrappedBoxHeight(prompt, w), 54f, 90f);
+            CartoonGUI.DrawCenterBox(new Rect(Screen.width / 2f - w / 2f, Screen.height - h - 92f, w, h), prompt);
         }
     }
 }

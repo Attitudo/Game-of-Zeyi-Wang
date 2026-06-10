@@ -64,3 +64,20 @@ git push
 - Guards now use collision-aware movement and should not pass through level geometry.
 - EMP now has a center crosshair, wider hit detection, and aim assist.
 - Level 1 laser alignment is easier because mirror rotation is finer and receiver detection is more forgiving.
+
+
+## Day 11 Visual Theme Upgrade
+
+The first four levels have been polished into a cartoon dungeon / ancient castle style.
+
+New visual features:
+- Kenney fantasy textures are applied to stone floors, brick walls, wooden crates, and iron gates.
+- Player and guards now use simple cartoon character models built directly into each scene.
+- The player shows a first-person EMP blaster after picking up the EMP device.
+- Every level contains persistent dungeon props such as torches, columns, banners, and wooden supplies.
+- The atmosphere is darker with fog and warm torch lighting to create an underground castle mood.
+
+Gameplay is unchanged:
+- Use mirrors to route laser beams around walls and obstacles.
+- Walls, crates, and security doors still block the laser.
+- Receivers open doors, and exits remain locked until level requirements are complete.

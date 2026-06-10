@@ -246,6 +246,9 @@ public class EMPWeapon : MonoBehaviour
         GUI.DrawTexture(new Rect(centerX - crosshairThickness * 0.5f, centerY + gap, crosshairThickness, length), Texture2D.whiteTexture);
 
         GUI.color = oldColor;
-        GUI.Box(new Rect(centerX - 90f, centerY + 42f, 180f, 32f), "EMP: F | Charges: " + inventory.empCharges);
+        string prompt = "EMP: F | Charges: " + inventory.empCharges;
+        float w = 235f;
+        float h = Mathf.Clamp(CartoonGUI.GetWrappedBoxHeight(prompt, w), 42f, 70f);
+        CartoonGUI.DrawCenterBox(new Rect(centerX - w / 2f, centerY + 42f, w, h), prompt);
     }
 }
