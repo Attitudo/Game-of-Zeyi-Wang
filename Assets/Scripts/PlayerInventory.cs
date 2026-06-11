@@ -67,6 +67,11 @@ public class PlayerInventory : MonoBehaviour
 
     private void OnGUI()
     {
+        if (GlobalMenuUI.GameplayBlocked)
+        {
+            return;
+        }
+
         int reflected = 0;
         int required = 0;
         if (LightReflection.Instance != null)
@@ -87,16 +92,13 @@ public class PlayerInventory : MonoBehaviour
         float counterHeight = Mathf.Clamp(CartoonGUI.GetWrappedBoxHeight(status, counterWidth, true), 150f, 205f);
         CartoonGUI.DrawSmallBox(new Rect(Screen.width - counterWidth - 15f, 15f, counterWidth, counterHeight), status);
 
-        if (hasEmpDevice)
+        if (hasEmpDevice && GlobalMenuUI.HelpVisible)
         {
-            CartoonGUI.DrawSmallBox(new Rect(Screen.width - 270f, Screen.height - 78f, 250f, 56f), "Weapon: Press F to fire EMP stun.");
+            string weaponPrompt = "Weapon: Press F to fire EMP stun.";
+            float w = 270f;
+            float h = Mathf.Clamp(CartoonGUI.GetWrappedBoxHeight(weaponPrompt, w, true), 50f, 80f);
+            CartoonGUI.DrawSmallBox(new Rect(Screen.width - w - 15f, Screen.height - h - 15f, w, h), weaponPrompt);
         }
 
-        if (pickupMessageTimer > 0f && !string.IsNullOrEmpty(pickupMessage))
-        {
-            float pickupWidth = Mathf.Min(520f, Screen.width * 0.62f);
-            float pickupHeight = Mathf.Clamp(CartoonGUI.GetWrappedBoxHeight(pickupMessage, pickupWidth), 54f, 110f);
-            CartoonGUI.DrawCenterBox(new Rect(Screen.width / 2f - pickupWidth / 2f, 205f, pickupWidth, pickupHeight), pickupMessage);
-        }
     }
 }

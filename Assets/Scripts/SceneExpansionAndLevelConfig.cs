@@ -564,24 +564,24 @@ public class SceneExpansionAndLevelConfig : MonoBehaviour
 
     private void ExpandBoundaryWalls(LevelLayout layout)
     {
-        float wallHeight = 4.2f;
+        float wallHeight = 5.6f;
         float wallY = wallHeight / 2f - 0.05f;
 
-        SetTransform(layout.existingPrefix + "_BackWall", new Vector3(0f, wallY, layout.halfZ), new Vector3(layout.halfX * 2f, wallHeight, 0.35f));
-        SetTransform(layout.existingPrefix + "_FrontWall", new Vector3(0f, wallY, -layout.halfZ), new Vector3(layout.halfX * 2f, wallHeight, 0.35f));
-        SetTransform(layout.existingPrefix + "_LeftWall", new Vector3(-layout.halfX, wallY, 0f), new Vector3(0.35f, wallHeight, layout.halfZ * 2f));
-        SetTransform(layout.existingPrefix + "_RightWall", new Vector3(layout.halfX, wallY, 0f), new Vector3(0.35f, wallHeight, layout.halfZ * 2f));
+        SetTransform(layout.existingPrefix + "_BackWall", new Vector3(0f, wallY, layout.halfZ), new Vector3(layout.halfX * 2f + 0.8f, wallHeight, 0.65f));
+        SetTransform(layout.existingPrefix + "_FrontWall", new Vector3(0f, wallY, -layout.halfZ), new Vector3(layout.halfX * 2f + 0.8f, wallHeight, 0.65f));
+        SetTransform(layout.existingPrefix + "_LeftWall", new Vector3(-layout.halfX, wallY, 0f), new Vector3(0.65f, wallHeight, layout.halfZ * 2f + 0.8f));
+        SetTransform(layout.existingPrefix + "_RightWall", new Vector3(layout.halfX, wallY, 0f), new Vector3(0.65f, wallHeight, layout.halfZ * 2f + 0.8f));
     }
 
     private void CreateFloorAndCeiling(LevelLayout layout)
     {
         CreateOrUpdateCube(layout.runtimePrefix + "_ExpandedFloor", new Vector3(0f, -0.12f, 0f), new Vector3(layout.halfX * 2f, 0.18f, layout.halfZ * 2f), floorMaterial);
-        CreateOrUpdateCube(layout.runtimePrefix + "_SealedCeiling", new Vector3(0f, 4.25f, 0f), new Vector3(layout.halfX * 2f, 0.30f, layout.halfZ * 2f), wallMaterial);
+        CreateOrUpdateCube(layout.runtimePrefix + "_SealedCeiling", new Vector3(0f, 5.55f, 0f), new Vector3(layout.halfX * 2f + 0.8f, 0.35f, layout.halfZ * 2f + 0.8f), wallMaterial);
 
         for (int i = -2; i <= 2; i++)
         {
-            CreateOrUpdateCube(layout.runtimePrefix + "_CeilingBeam_Z_" + i, new Vector3(0f, 4.05f, i * layout.halfZ / 3f), new Vector3(layout.halfX * 2f, 0.18f, 0.18f), wallMaterial);
-            CreateOrUpdateCube(layout.runtimePrefix + "_CeilingBeam_X_" + i, new Vector3(i * layout.halfX / 3f, 4.06f, 0f), new Vector3(0.18f, 0.18f, layout.halfZ * 2f), wallMaterial);
+            CreateOrUpdateCube(layout.runtimePrefix + "_CeilingBeam_Z_" + i, new Vector3(0f, 5.33f, i * layout.halfZ / 3f), new Vector3(layout.halfX * 2f + 0.8f, 0.18f, 0.18f), wallMaterial);
+            CreateOrUpdateCube(layout.runtimePrefix + "_CeilingBeam_X_" + i, new Vector3(i * layout.halfX / 3f, 5.34f, 0f), new Vector3(0.18f, 0.18f, layout.halfZ * 2f + 0.8f), wallMaterial);
         }
     }
 

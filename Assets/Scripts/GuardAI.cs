@@ -45,6 +45,15 @@ public class GuardAI : MonoBehaviour
     private float searchTimer;
     private float verticalVelocity;
     private Vector3 lastKnownPlayerPosition;
+
+    [Header("Wall Avoidance")]
+    public float obstacleAvoidanceDistance = 1.1f;
+    public float obstacleAvoidanceRadius = 0.32f;
+    public float stuckAdvanceTime = 0.75f;
+
+    private Vector3 lastStuckCheckPosition;
+    private float stuckTimer;
+    private bool lastMoveWasBlocked;
     private Renderer guardRenderer;
     private CharacterController characterController;
     private Mesh visionConeMesh;
@@ -81,6 +90,7 @@ public class GuardAI : MonoBehaviour
         guardRenderer = GetComponentInChildren<Renderer>();
         SetColor(Color.blue);
         CreateVisionConeVisual();
+        lastStuckCheckPosition = transform.position;
     }
 
     private void Update()
@@ -126,6 +136,42 @@ public class GuardAI : MonoBehaviour
         }
     }
 
+    public string CurrentStateText
+    {
+        get
+        {
+            if (stunTimer > 0f) return "STUNNED";
+            if (state == GuardState.Chase) return "ALERT";
+            if (state == GuardState.Search) return "SEARCH";
+            return "PATROL";
+        }
+    }
+
+    private void OnGUI()
+    {
+        if (!GlobalMenuUI.HelpVisible || GlobalMenuUI.GameplayBlocked)
+        {
+            return;
+        }
+
+        Camera cam = Camera.main;
+        if (cam == null)
+        {
+            return;
+        }
+
+        Vector3 screen = cam.WorldToScreenPoint(transform.position + Vector3.up * 2.1f);
+        if (screen.z <= 0f)
+        {
+            return;
+        }
+
+        string label = "Guard: " + CurrentStateText;
+        float w = 130f;
+        float h = 34f;
+        CartoonGUI.DrawCenterBox(new Rect(screen.x - w / 2f, Screen.height - screen.y - h / 2f, w, h), label);
+    }
+
     public void Stun(float seconds)
     {
         stunTimer = Mathf.Max(stunTimer, seconds);
@@ -150,6 +196,12 @@ public class GuardAI : MonoBehaviour
 
         Transform target = patrolPoints[currentPatrolIndex];
         MoveTowards(target.position, patrolSpeed);
+
+        if (lastMoveWasBlocked)
+        {
+            currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Length;
+            return;
+        }
 
         Vector3 flatCurrent = new Vector3(transform.position.x, 0f, transform.position.z);
         Vector3 flatTarget = new Vector3(target.position.x, 0f, target.position.z);
@@ -236,6 +288,8 @@ public class GuardAI : MonoBehaviour
 
     private void MoveTowards(Vector3 target, float speed)
     {
+        lastMoveWasBlocked = false;
+
         Vector3 flatTarget = new Vector3(target.x, transform.position.y, target.z);
         Vector3 direction = flatTarget - transform.position;
         direction.y = 0f;
@@ -246,11 +300,105 @@ public class GuardAI : MonoBehaviour
             return;
         }
 
-        Vector3 normalizedDirection = direction.normalized;
-        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(normalizedDirection), 10f * Time.deltaTime);
+        Vector3 desiredDirection = direction.normalized;
+        Vector3 steeredDirection = GetWallAwareDirection(desiredDirection);
+        if (steeredDirection.sqrMagnitude < 0.001f)
+        {
+            steeredDirection = desiredDirection;
+        }
 
-        Vector3 horizontalMove = normalizedDirection * speed * Time.deltaTime;
+        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(steeredDirection), 10f * Time.deltaTime);
+
+        Vector3 before = transform.position;
+        Vector3 horizontalMove = steeredDirection * speed * Time.deltaTime;
         MoveWithCollision(horizontalMove);
+        UpdateStuckDetection(before, target);
+    }
+
+    private Vector3 GetWallAwareDirection(Vector3 desiredDirection)
+    {
+        Vector3 origin = transform.position + Vector3.up * 0.75f;
+        RaycastHit[] hits = Physics.SphereCastAll(origin, obstacleAvoidanceRadius, desiredDirection, obstacleAvoidanceDistance, ~0, QueryTriggerInteraction.Ignore);
+        if (hits == null || hits.Length == 0)
+        {
+            return desiredDirection;
+        }
+
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+        foreach (RaycastHit hit in hits)
+        {
+            if (hit.collider == null)
+            {
+                continue;
+            }
+
+            if (hit.collider.GetComponentInParent<GuardAI>() == this)
+            {
+                continue;
+            }
+
+            if (hit.collider.CompareTag("Player") || hit.collider.GetComponentInParent<PlayerController>() != null)
+            {
+                continue;
+            }
+
+            string n = hit.collider.gameObject.name.ToLowerInvariant();
+            if (n.Contains("floor") || n.Contains("ceiling") || n.Contains("rail") || n.Contains("mirror") || n.Contains("receiver"))
+            {
+                continue;
+            }
+
+            Vector3 slide = Vector3.ProjectOnPlane(desiredDirection, hit.normal);
+            slide.y = 0f;
+
+            if (slide.sqrMagnitude < 0.001f)
+            {
+                slide = Vector3.Cross(Vector3.up, hit.normal);
+            }
+
+            if (Vector3.Dot(slide, desiredDirection) < 0f)
+            {
+                slide = -slide;
+            }
+
+            slide.y = 0f;
+            if (slide.sqrMagnitude < 0.001f)
+            {
+                return -hit.normal;
+            }
+
+            return Vector3.Slerp(desiredDirection, slide.normalized, 0.85f).normalized;
+        }
+
+        return desiredDirection;
+    }
+
+    private void UpdateStuckDetection(Vector3 beforeMove, Vector3 target)
+    {
+        Vector3 flatBefore = new Vector3(beforeMove.x, 0f, beforeMove.z);
+        Vector3 flatAfter = new Vector3(transform.position.x, 0f, transform.position.z);
+        float moved = Vector3.Distance(flatBefore, flatAfter);
+
+        Vector3 flatTarget = new Vector3(target.x, 0f, target.z);
+        float distanceToTarget = Vector3.Distance(flatAfter, flatTarget);
+
+        if (moved < 0.015f && distanceToTarget > waypointReachDistance * 2f)
+        {
+            stuckTimer += Time.deltaTime;
+        }
+        else
+        {
+            stuckTimer = 0f;
+        }
+
+        if (stuckTimer >= stuckAdvanceTime)
+        {
+            lastMoveWasBlocked = true;
+            stuckTimer = 0f;
+        }
+
+        lastStuckCheckPosition = transform.position;
     }
 
     private void MoveWithCollision(Vector3 horizontalMove)

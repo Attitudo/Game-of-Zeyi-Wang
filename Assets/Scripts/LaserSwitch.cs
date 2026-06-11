@@ -56,7 +56,7 @@ public class LaserSwitch : MonoBehaviour
 
     private void Update()
     {
-        if (player == null)
+        if (player == null || GlobalMenuUI.GameplayBlocked)
         {
             return;
         }
@@ -109,7 +109,7 @@ public class LaserSwitch : MonoBehaviour
 
     private void OnGUI()
     {
-        if (player == null)
+        if (player == null || !GlobalMenuUI.HelpVisible || GlobalMenuUI.GameplayBlocked)
         {
             return;
         }

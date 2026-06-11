@@ -20,6 +20,14 @@ public class EMPWeapon : MonoBehaviour
     private Camera playerCamera;
     private Transform empGunVisual;
 
+    private void Awake()
+    {
+        inventory = GetComponent<PlayerInventory>();
+        playerCamera = Camera.main;
+        FindEmpGunVisual();
+        ForceWeaponVisibility(false);
+    }
+
     private void Start()
     {
         inventory = GetComponent<PlayerInventory>();
@@ -37,7 +45,7 @@ public class EMPWeapon : MonoBehaviour
 
         UpdateEmpGunVisual();
 
-        if (Input.GetKeyDown(fireKey))
+        if (!GlobalMenuUI.GameplayBlocked && Input.GetKeyDown(fireKey))
         {
             Fire();
         }
@@ -57,8 +65,37 @@ public class EMPWeapon : MonoBehaviour
 
         if (playerCamera != null)
         {
-            empGunVisual = playerCamera.transform.Find("EMP_Blaster_Visual");
+            empGunVisual = FindDeepChild(playerCamera.transform, "EMP_Blaster_Visual");
         }
+
+        if (empGunVisual == null)
+        {
+            empGunVisual = FindDeepChild(transform, "EMP_Blaster_Visual");
+        }
+    }
+
+    private Transform FindDeepChild(Transform parent, string targetName)
+    {
+        if (parent == null)
+        {
+            return null;
+        }
+
+        if (parent.name == targetName)
+        {
+            return parent;
+        }
+
+        foreach (Transform child in parent)
+        {
+            Transform found = FindDeepChild(child, targetName);
+            if (found != null)
+            {
+                return found;
+            }
+        }
+
+        return null;
     }
 
     private void UpdateEmpGunVisual()
@@ -70,9 +107,43 @@ public class EMPWeapon : MonoBehaviour
 
         FindEmpGunVisual();
 
+        bool shouldShow = inventory != null && inventory.hasEmpDevice;
+        ForceWeaponVisibility(shouldShow);
+    }
+
+    private void ForceWeaponVisibility(bool visible)
+    {
+        FindEmpGunVisual();
+
         if (empGunVisual != null)
         {
-            empGunVisual.gameObject.SetActive(inventory != null && inventory.hasEmpDevice);
+            empGunVisual.gameObject.SetActive(visible);
+        }
+
+        // Extra safety: if an old scene has weapon pieces active under the camera,
+        // hide them until the EMP device is actually picked up.
+        if (playerCamera == null)
+        {
+            playerCamera = Camera.main;
+        }
+
+        if (playerCamera != null)
+        {
+            Renderer[] renderers = playerCamera.GetComponentsInChildren<Renderer>(true);
+            foreach (Renderer r in renderers)
+            {
+                if (r == null)
+                {
+                    continue;
+                }
+
+                string n = r.gameObject.name.ToLowerInvariant();
+                string p = r.transform.parent != null ? r.transform.parent.name.ToLowerInvariant() : "";
+                if (n.Contains("emp") || n.Contains("blaster") || n.Contains("gun") || p.Contains("emp_blaster"))
+                {
+                    r.enabled = visible;
+                }
+            }
         }
     }
 
@@ -217,7 +288,7 @@ public class EMPWeapon : MonoBehaviour
 
     private void OnGUI()
     {
-        if (!showCrosshair)
+        if (!showCrosshair || GlobalMenuUI.GameplayBlocked)
         {
             return;
         }
@@ -246,6 +317,12 @@ public class EMPWeapon : MonoBehaviour
         GUI.DrawTexture(new Rect(centerX - crosshairThickness * 0.5f, centerY + gap, crosshairThickness, length), Texture2D.whiteTexture);
 
         GUI.color = oldColor;
+
+        if (!GlobalMenuUI.HelpVisible)
+        {
+            return;
+        }
+
         string prompt = "EMP: F | Charges: " + inventory.empCharges;
         float w = 235f;
         float h = Mathf.Clamp(CartoonGUI.GetWrappedBoxHeight(prompt, w), 42f, 70f);

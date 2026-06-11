@@ -26,6 +26,7 @@ public static class StableCharacterVisuals
         Transform existing = root.transform.Find(childName);
         if (existing != null)
         {
+            HideLegacyCharacterRenderers(root, childName);
             return existing.gameObject;
         }
 
@@ -131,6 +132,16 @@ public static class StableCharacterVisuals
 
     private static void HideCapsuleRenderer(GameObject root, string visualName)
     {
+        HideLegacyCharacterRenderers(root, visualName);
+    }
+
+    private static void HideLegacyCharacterRenderers(GameObject root, string visualName)
+    {
+        if (root == null)
+        {
+            return;
+        }
+
         Renderer renderer = root.GetComponent<Renderer>();
         if (renderer != null)
         {
@@ -139,18 +150,46 @@ public static class StableCharacterVisuals
 
         foreach (Transform child in root.transform)
         {
-            if (child.name == visualName)
+            if (child == null)
             {
                 continue;
             }
 
             string lower = child.name.ToLowerInvariant();
-            if (lower.Contains("capsule") || lower.Contains("body") || lower.Contains("visual"))
+
+            // Keep the real imported/stable model, camera, ground check, and weapon holder.
+            if (child.name == visualName ||
+                lower.Contains("stable_") ||
+                lower.Contains("main camera") ||
+                lower.Contains("camera") ||
+                lower.Contains("groundcheck") ||
+                lower.Contains("emp_blaster") ||
+                lower.Contains("procedural_"))
             {
-                Renderer childRenderer = child.GetComponent<Renderer>();
-                if (childRenderer != null)
+                continue;
+            }
+
+            bool looksLikeOldProceduralCharacter =
+                lower.Contains("cartoonmodel") ||
+                lower.Contains("procedural") ||
+                lower.Contains("capsule") ||
+                lower.Contains("body") ||
+                lower.Contains("head") ||
+                lower.Contains("arm") ||
+                lower.Contains("leg") ||
+                lower.Contains("player_") ||
+                lower.Contains("guard_") ||
+                lower.Contains("visual");
+
+            if (looksLikeOldProceduralCharacter)
+            {
+                Renderer[] renderers = child.GetComponentsInChildren<Renderer>(true);
+                foreach (Renderer childRenderer in renderers)
                 {
-                    childRenderer.enabled = false;
+                    if (childRenderer != null)
+                    {
+                        childRenderer.enabled = false;
+                    }
                 }
             }
         }
@@ -169,6 +208,10 @@ public class StableCharacterMotion : MonoBehaviour
     private Quaternion baseLocalRotation;
     private float cycle;
 
+    private Transform leftFoot;
+    private Transform rightFoot;
+    private Material footMaterial;
+
     private void Start()
     {
         if (owner == null && transform.parent != null)
@@ -185,19 +228,110 @@ public class StableCharacterMotion : MonoBehaviour
 
         baseLocalPosition = transform.localPosition;
         baseLocalRotation = transform.localRotation;
+
+        HideOldReachVisuals();
+        CreateStepFeet();
     }
 
     private void LateUpdate()
     {
         float speed = GetSpeed();
         bool moving = speed > 0.15f;
-        cycle += Time.deltaTime * (moving ? Mathf.Lerp(3f, 8f, Mathf.Clamp01(speed / 5f)) : 1.2f);
+        cycle += Time.deltaTime * (moving ? Mathf.Lerp(4f, 10f, Mathf.Clamp01(speed / 5f)) : 1.4f);
 
-        float bob = moving ? Mathf.Abs(Mathf.Sin(cycle * 2f)) * 0.035f : Mathf.Sin(cycle) * 0.008f;
-        float yawSwing = moving ? Mathf.Sin(cycle) * 3.5f : Mathf.Sin(cycle) * 0.8f;
+        float bob = moving ? Mathf.Abs(Mathf.Sin(cycle * 2f)) * 0.055f : Mathf.Sin(cycle) * 0.008f;
+        float yawSwing = moving ? Mathf.Sin(cycle) * 5.0f : Mathf.Sin(cycle) * 0.8f;
+        float pitchLean = moving ? Mathf.Sin(cycle * 2f) * 1.8f : 0f;
 
         transform.localPosition = baseLocalPosition + new Vector3(0f, bob, 0f);
-        transform.localRotation = baseLocalRotation * Quaternion.Euler(0f, yawSwing, 0f);
+        transform.localRotation = baseLocalRotation * Quaternion.Euler(pitchLean, yawSwing, moving ? Mathf.Sin(cycle) * 1.3f : 0f);
+
+        UpdateStepFeet(moving, speed);
+        HideOldReachVisuals();
+    }
+
+    private void HideOldReachVisuals()
+    {
+        if (owner == null)
+        {
+            return;
+        }
+
+        string[] oldNames =
+        {
+            "Procedural_MirrorReachArm",
+            "Procedural_MirrorReachHand"
+        };
+
+        foreach (string oldName in oldNames)
+        {
+            Transform old = owner.Find(oldName);
+            if (old != null)
+            {
+                old.gameObject.SetActive(false);
+            }
+        }
+    }
+
+    private void CreateStepFeet()
+    {
+        if (owner == null)
+        {
+            return;
+        }
+
+        footMaterial = new Material(Shader.Find("Standard"));
+        footMaterial.color = isGuard ? new Color(0.05f, 0.08f, 0.08f) : new Color(0.06f, 0.05f, 0.04f);
+
+        leftFoot = CreateFoot("Procedural_LeftStepFoot", -0.16f);
+        rightFoot = CreateFoot("Procedural_RightStepFoot", 0.16f);
+    }
+
+    private Transform CreateFoot(string name, float x)
+    {
+        Transform existing = owner.Find(name);
+        if (existing != null)
+        {
+            return existing;
+        }
+
+        GameObject foot = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        foot.name = name;
+        foot.transform.SetParent(owner, false);
+        foot.transform.localPosition = new Vector3(x, -0.92f, 0.10f);
+        foot.transform.localRotation = Quaternion.identity;
+        foot.transform.localScale = new Vector3(0.18f, 0.07f, 0.32f);
+
+        Renderer r = foot.GetComponent<Renderer>();
+        if (r != null)
+        {
+            r.material = footMaterial;
+        }
+
+        Collider c = foot.GetComponent<Collider>();
+        if (c != null)
+        {
+            Destroy(c);
+        }
+
+        return foot.transform;
+    }
+
+    private void UpdateStepFeet(bool moving, float speed)
+    {
+        if (owner == null || leftFoot == null || rightFoot == null)
+        {
+            return;
+        }
+
+        float stride = moving ? Mathf.Lerp(0.12f, 0.28f, Mathf.Clamp01(speed / 5f)) : 0f;
+        float lift = moving ? 0.08f : 0f;
+
+        float leftPhase = Mathf.Sin(cycle);
+        float rightPhase = Mathf.Sin(cycle + Mathf.PI);
+
+        leftFoot.localPosition = new Vector3(-0.16f, -0.92f + Mathf.Max(0f, leftPhase) * lift, 0.10f + leftPhase * stride);
+        rightFoot.localPosition = new Vector3(0.16f, -0.92f + Mathf.Max(0f, rightPhase) * lift, 0.10f + rightPhase * stride);
     }
 
     private float GetSpeed()

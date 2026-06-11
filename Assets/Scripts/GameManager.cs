@@ -113,78 +113,11 @@ public class GameManager : MonoBehaviour
 
     private void OnGUI()
     {
-        string title = customObjectiveTitle;
-        string body = customObjectiveBody;
-
-        if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(body))
+        if (!GlobalMenuUI.GameplayBlocked && messageTimer > 0f && !string.IsNullOrEmpty(temporaryMessage))
         {
-            string sceneName = SceneManager.GetActiveScene().name;
-            if (sceneName == "Level06")
-            {
-                title = "LEVEL 6 - FINAL MIRROR CATACOMB:";
-                body =
-                    "1. Collect the Master Keycard, three Energy Cores, and the EMP Device.\n" +
-                    "2. The receiver requires exactly 6 unique mirror reflections before it can power on.\n" +
-                    "3. Use EMP carefully to survive the final guard patrols.\n" +
-                    "Controls: WASD move, Mouse look, Space jump, Q/E rotate mirrors, Z/C slide rail mirrors, X laser switch, F fire EMP, R restart after win/loss.";
-            }
-            else if (sceneName == "Level05")
-            {
-                title = "LEVEL 5 - SEALED CRYPT MAZE:";
-                body =
-                    "1. Collect the Crypt Keycard, two Energy Cores, and the EMP Device.\n" +
-                    "2. The receiver requires exactly 5 unique mirror reflections before it can power on.\n" +
-                    "3. Open the door and escape through the green exit zone.\n" +
-                    "Controls: WASD move, Mouse look, Space jump, Q/E rotate mirrors, Z/C slide rail mirrors, X laser switch, F fire EMP, R restart after win/loss.";
-            }
-            else if (sceneName == "Level04")
-            {
-                title = "LEVEL 4 - ANCIENT CORE CHAMBER:";
-                body =
-                    "1. Collect two Energy Cores and the Master Keycard.\n" +
-                    "2. Use limited EMP charges against two AI guards.\n" +
-                    "3. The receiver requires exactly 4 unique mirror reflections before it can power on.\n" +
-                    "Controls: WASD move, Mouse look, Space jump, Q/E rotate mirrors, Z/C slide rail mirrors, X laser switch, F fire EMP, R restart after win/loss.";
-            }
-            else if (sceneName == "Level03")
-            {
-                title = "LEVEL 3 - GUARD VAULT:";
-                body =
-                    "1. Pick up the EMP Device and Security Keycard.\n" +
-                    "2. Use F to stun the guard when needed.\n" +
-                    "3. The receiver requires exactly 3 unique mirror reflections before it can power on.\n" +
-                    "Controls: WASD move, Mouse look, Space jump, Q/E rotate mirrors, Z/C slide rail mirrors, X laser switch, F fire EMP, R restart after win/loss.";
-            }
-            else if (sceneName == "Level02")
-            {
-                title = "LEVEL 2 - DUNGEON SWITCH ROOM:";
-                body =
-                    "1. The receiver requires exactly 2 unique mirror reflections before it can power on.\n" +
-                    "2. The door opens only while the receiver is powered.\n" +
-                    "3. Avoid the AI guard and reach the green exit zone.\n" +
-                    "Controls: WASD move, Mouse look, Space jump, X toggle laser, Q/E rotate mirrors, Z/C slide rail mirrors, R restart after win/loss.";
-            }
-            else
-            {
-                title = "LEVEL 1 - CASTLE ENTRANCE:";
-                body =
-                    "1. Approach the mirror and press Q / E to rotate it.\n" +
-                    "2. The receiver requires exactly 1 mirror reflection before it can power on.\n" +
-                    "3. Avoid the AI guard and reach the green exit zone.\n" +
-                    "Controls: WASD move, Mouse look, Space jump, Q/E rotate mirrors, Z/C slide rail mirrors, R restart after win/loss.";
-            }
-        }
-
-        string objectiveText = "<color=#FFD45A>" + title + "</color>\n" + body;
-        float objectiveWidth = Mathf.Min(560f, Screen.width * 0.48f);
-        float objectiveHeight = Mathf.Clamp(CartoonGUI.GetWrappedBoxHeight(objectiveText, objectiveWidth), 120f, 245f);
-        CartoonGUI.DrawBox(new Rect(15f, 15f, objectiveWidth, objectiveHeight), objectiveText);
-
-        if (messageTimer > 0f && !string.IsNullOrEmpty(temporaryMessage))
-        {
-            float messageWidth = Mathf.Min(620f, Screen.width * 0.70f);
-            float messageHeight = Mathf.Clamp(CartoonGUI.GetWrappedBoxHeight(temporaryMessage, messageWidth), 70f, 150f);
-            CartoonGUI.DrawCenterBox(new Rect(Screen.width / 2f - messageWidth / 2f, Screen.height / 2f - messageHeight / 2f, messageWidth, messageHeight), temporaryMessage);
+            float messageWidth = Mathf.Min(520f, Screen.width * 0.58f);
+            float messageHeight = Mathf.Clamp(CartoonGUI.GetWrappedBoxHeight(temporaryMessage, messageWidth), 52f, 105f);
+            CartoonGUI.DrawCenterBox(new Rect(Screen.width / 2f - messageWidth / 2f, 205f, messageWidth, messageHeight), temporaryMessage);
         }
     }
 }

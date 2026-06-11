@@ -22,6 +22,7 @@ public class MovableMirrorRail : MonoBehaviour
     [Header("Visual Feedback")]
     public GameObject railVisual;
     public Color normalColor = new Color(0.35f, 0.35f, 0.35f);
+    public Color activeColor = new Color(1.0f, 0.68f, 0.18f);
 
     private Transform player;
     private Renderer railRenderer;
@@ -45,6 +46,13 @@ public class MovableMirrorRail : MonoBehaviour
     {
         if (player == null)
         {
+            return;
+        }
+
+        if (GlobalMenuUI.GameplayBlocked)
+        {
+            playerInRange = false;
+            KeepRailNormalColor();
             return;
         }
 
@@ -273,13 +281,13 @@ public class MovableMirrorRail : MonoBehaviour
             return;
         }
 
-        // No green "correct position" hint. The player must judge the solution by the laser path.
-        railRenderer.material.color = normalColor;
+        // No green "correct position" hint. Active orange only shows the currently selected rail.
+        railRenderer.material.color = playerInRange ? activeColor : normalColor;
     }
 
     private void OnGUI()
     {
-        if (!playerInRange)
+        if (!playerInRange || !GlobalMenuUI.HelpVisible || GlobalMenuUI.GameplayBlocked)
         {
             return;
         }

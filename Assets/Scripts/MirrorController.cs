@@ -31,7 +31,7 @@ public class MirrorController : MonoBehaviour
         playerInRange = rail != null
             ? rail.IsThisTheActiveRailForPlayer(player)
             : IsClosestStandaloneMirror();
-        if (!playerInRange)
+        if (!playerInRange || GlobalMenuUI.GameplayBlocked)
         {
             return;
         }
@@ -93,7 +93,7 @@ public class MirrorController : MonoBehaviour
 
     private void OnGUI()
     {
-        if (!playerInRange)
+        if (!playerInRange || !GlobalMenuUI.HelpVisible || GlobalMenuUI.GameplayBlocked)
         {
             return;
         }

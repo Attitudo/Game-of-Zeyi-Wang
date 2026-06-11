@@ -13,6 +13,11 @@ public class LightReflection : MonoBehaviour
     public float surfaceOffset = 0.05f;
     public bool laserEnabled = true;
 
+    [Header("Laser Feedback Colors")]
+    public Color underReflectedColor = new Color(1f, 0.88f, 0.15f);
+    public Color correctReflectionColor = new Color(0.25f, 0.75f, 1f);
+    public Color overReflectedColor = new Color(1f, 0.25f, 0.20f);
+
     [Header("Laser Collision")]
     [Tooltip("Walls, cover boxes, barriers and closed doors block the laser. Mirror surfaces reflect it. Receivers consume it.")]
     public bool obstaclesBlockLaser = true;
@@ -110,6 +115,7 @@ public class LightReflection : MonoBehaviour
             receiversPoweredLastFrame.Clear();
             mirrorsHitThisPath.Clear();
             mirrorReflectionsThisPath = 0;
+            UpdateLaserColor();
         }
     }
 
@@ -169,6 +175,7 @@ public class LightReflection : MonoBehaviour
         }
 
         TurnOffReceiversNotHit();
+        UpdateLaserColor();
     }
 
     private bool FindFirstLaserHit(Vector3 origin, Vector3 direction, out RaycastHit selectedHit)
@@ -397,6 +404,31 @@ public class LightReflection : MonoBehaviour
         receiversHitThisFrame.Add(receiver);
     }
 
+    private void UpdateLaserColor()
+    {
+        if (lineRenderer == null)
+        {
+            return;
+        }
+
+        Color c = underReflectedColor;
+        if (!laserEnabled)
+        {
+            c = new Color(0.25f, 0.25f, 0.25f, 0.35f);
+        }
+        else if (mirrorReflectionsThisPath == requiredMirrorReflections)
+        {
+            c = correctReflectionColor;
+        }
+        else if (mirrorReflectionsThisPath > requiredMirrorReflections)
+        {
+            c = overReflectedColor;
+        }
+
+        lineRenderer.startColor = c;
+        lineRenderer.endColor = c;
+    }
+
     private void AddLinePoint(Vector3 point)
     {
         lineRenderer.positionCount += 1;
@@ -437,7 +469,7 @@ public class LightReflection : MonoBehaviour
             lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
         }
 
-        lineRenderer.startColor = Color.yellow;
-        lineRenderer.endColor = Color.yellow;
+        lineRenderer.startColor = underReflectedColor;
+        lineRenderer.endColor = underReflectedColor;
     }
 }
