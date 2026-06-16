@@ -28,6 +28,7 @@ public class MovableMirrorRail : MonoBehaviour
     private Renderer railRenderer;
     private bool playerInRange;
     private bool hasAppliedInitialOffset;
+    private float slideSoundTimer;
 
     private void Start()
     {
@@ -44,6 +45,11 @@ public class MovableMirrorRail : MonoBehaviour
 
     private void Update()
     {
+        if (slideSoundTimer > 0f)
+        {
+            slideSoundTimer -= Time.deltaTime;
+        }
+
         if (player == null)
         {
             return;
@@ -231,6 +237,12 @@ public class MovableMirrorRail : MonoBehaviour
         }
 
         transform.position = newPosition;
+
+        if (slideSoundTimer <= 0f)
+        {
+            GameAudio.PlayMirrorSlide();
+            slideSoundTimer = 0.32f;
+        }
 
         if (LightReflection.Instance != null)
         {

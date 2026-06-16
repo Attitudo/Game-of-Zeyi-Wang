@@ -84,6 +84,7 @@ public class MirrorController : MonoBehaviour
     private void RotateMirror(float angle)
     {
         transform.Rotate(0f, angle, 0f, Space.World);
+        GameAudio.PlayMirrorRotate();
 
         if (LightReflection.Instance != null)
         {

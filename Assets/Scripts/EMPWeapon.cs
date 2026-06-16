@@ -172,6 +172,7 @@ public class EMPWeapon : MonoBehaviour
         }
 
         cooldownTimer = cooldown;
+        GameAudio.PlayEmpFire();
 
         if (playerCamera == null)
         {

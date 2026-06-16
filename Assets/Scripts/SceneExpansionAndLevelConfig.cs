@@ -73,6 +73,7 @@ public class SceneExpansionAndLevelConfig : MonoBehaviour
         ConfigureExpertPickups(sceneName);
         ImproveLaserDistance();
         ConfigureRequiredMirrorReflections(layout);
+        ConfigureStoryAndProps(sceneName, layout);
     }
 
     private void ApplyCharacterModels()
@@ -792,8 +793,24 @@ public class SceneExpansionAndLevelConfig : MonoBehaviour
             switchObject = new GameObject("LaserSwitch");
         }
 
-        switchObject.transform.position = GetSafeSwitchPosition(layout);
-        switchObject.transform.rotation = Quaternion.LookRotation((layout.light - switchObject.transform.position).normalized, Vector3.up);
+        Vector3 switchPosition = GetSafeSwitchPosition(layout);
+        Vector3 switchBoxPosition = new Vector3(switchPosition.x, 0.32f, switchPosition.z);
+        GameObject switchBox = CreateOrUpdateCube(layout.runtimePrefix + "_SwitchPedestalBox",
+            switchBoxPosition,
+            new Vector3(1.15f, 0.64f, 0.95f),
+            coverMaterial != null ? coverMaterial : wallMaterial);
+        if (switchBox != null)
+        {
+            switchBox.transform.rotation = Quaternion.identity;
+            Renderer boxRenderer = switchBox.GetComponent<Renderer>();
+            if (boxRenderer != null)
+            {
+                boxRenderer.material.color = new Color(0.32f, 0.20f, 0.10f);
+            }
+        }
+
+        switchObject.transform.position = switchPosition;
+        switchObject.transform.rotation = Quaternion.identity;
         switchObject.transform.localScale = Vector3.one;
 
         SphereCollider trigger = switchObject.GetComponent<SphereCollider>();
@@ -831,19 +848,19 @@ public class SceneExpansionAndLevelConfig : MonoBehaviour
         Vector3 light = layout.light;
         Vector3 firstMirror = layout.mirrors != null && layout.mirrors.Length > 0 ? layout.mirrors[0] : light;
 
-        // Put the switch on the side opposite the lamp and first mirror.
-        Vector3 dangerDirection = (light - player) + (firstMirror - player) * 0.35f;
-        dangerDirection.y = 0f;
-        if (dangerDirection.sqrMagnitude < 0.001f)
+        Vector3 forwardToPuzzle = (light - player) + (firstMirror - player) * 0.35f;
+        forwardToPuzzle.y = 0f;
+        if (forwardToPuzzle.sqrMagnitude < 0.001f)
         {
-            dangerDirection = Vector3.forward;
+            forwardToPuzzle = Vector3.forward;
         }
-        dangerDirection.Normalize();
+        forwardToPuzzle.Normalize();
 
-        Vector3 side = Vector3.Cross(Vector3.up, dangerDirection).normalized;
-        Vector3 candidate = player - dangerDirection * 1.8f + side * 1.6f;
-        candidate.y = 1.0f;
+        Vector3 side = Vector3.Cross(Vector3.up, forwardToPuzzle).normalized;
 
+        // Put every switch on a stable crate beside the spawn point.
+        Vector3 candidate = player - forwardToPuzzle * 1.20f + side * 1.45f;
+        candidate.y = 0.72f;
         return candidate;
     }
 
@@ -936,40 +953,42 @@ public class SceneExpansionAndLevelConfig : MonoBehaviour
 
     private void BuildSwitchVisual(GameObject switchObject)
     {
-        GameObject stand = FindOrCreatePrimitiveChild(switchObject.transform, "SwitchStand", PrimitiveType.Cylinder);
-        stand.transform.localPosition = new Vector3(0f, 0.40f, 0f);
-        stand.transform.localScale = new Vector3(0.12f, 0.32f, 0.12f);
-        SetColor(stand, new Color(0.10f, 0.10f, 0.10f));
+        switchObject.transform.rotation = Quaternion.identity;
 
         GameObject basePart = FindOrCreatePrimitiveChild(switchObject.transform, "SwitchBase", PrimitiveType.Cube);
-        basePart.transform.localPosition = new Vector3(0f, 0.06f, 0f);
-        basePart.transform.localScale = new Vector3(0.54f, 0.10f, 0.54f);
-        SetColor(basePart, new Color(0.18f, 0.18f, 0.18f));
+        basePart.transform.localPosition = new Vector3(0f, -0.08f, 0f);
+        basePart.transform.localRotation = Quaternion.identity;
+        basePart.transform.localScale = new Vector3(0.92f, 0.12f, 0.70f);
+        SetColor(basePart, new Color(0.12f, 0.12f, 0.12f));
 
-        GameObject housing = FindOrCreatePrimitiveChild(switchObject.transform, "SwitchHousing", PrimitiveType.Cube);
-        housing.transform.localPosition = new Vector3(0f, 0.70f, 0f);
-        housing.transform.localScale = new Vector3(0.40f, 0.32f, 0.24f);
-        SetColor(housing, new Color(0.20f, 0.20f, 0.20f));
+        GameObject metalPlate = FindOrCreatePrimitiveChild(switchObject.transform, "SwitchMetalPlate", PrimitiveType.Cube);
+        metalPlate.transform.localPosition = new Vector3(0f, 0.00f, 0.02f);
+        metalPlate.transform.localRotation = Quaternion.identity;
+        metalPlate.transform.localScale = new Vector3(0.72f, 0.055f, 0.50f);
+        SetColor(metalPlate, new Color(0.28f, 0.28f, 0.27f));
 
-        GameObject panelPart = FindOrCreatePrimitiveChild(switchObject.transform, "SwitchPanel", PrimitiveType.Cube);
-        panelPart.transform.localPosition = new Vector3(0f, 0.70f, 0.13f);
-        panelPart.transform.localScale = new Vector3(0.30f, 0.22f, 0.04f);
-        SetColor(panelPart, new Color(0.32f, 0.32f, 0.32f));
+        GameObject pivot = FindOrCreatePrimitiveChild(switchObject.transform, "SwitchPivot", PrimitiveType.Cylinder);
+        pivot.transform.localPosition = new Vector3(0f, 0.14f, 0f);
+        pivot.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        pivot.transform.localScale = new Vector3(0.16f, 0.10f, 0.16f);
+        SetColor(pivot, new Color(0.08f, 0.08f, 0.08f));
 
         GameObject leverPart = FindOrCreatePrimitiveChild(switchObject.transform, "SwitchLever", PrimitiveType.Cylinder);
-        leverPart.transform.localPosition = new Vector3(0f, 0.70f, 0.05f);
-        leverPart.transform.localScale = new Vector3(0.04f, 0.18f, 0.04f);
-        leverPart.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
-        SetColor(leverPart, new Color(0.68f, 0.12f, 0.12f));
+        leverPart.transform.localPosition = new Vector3(0f, 0.40f, 0.02f);
+        leverPart.transform.localRotation = Quaternion.Euler(-28f, 0f, 0f);
+        leverPart.transform.localScale = new Vector3(0.055f, 0.42f, 0.055f);
+        SetColor(leverPart, new Color(0.65f, 0.12f, 0.10f));
 
         GameObject handlePart = FindOrCreatePrimitiveChild(leverPart.transform, "SwitchHandle", PrimitiveType.Sphere);
-        handlePart.transform.localPosition = new Vector3(0f, 0.22f, 0f);
-        handlePart.transform.localScale = new Vector3(0.26f, 0.26f, 0.26f);
-        SetColor(handlePart, new Color(0.88f, 0.18f, 0.18f));
+        handlePart.transform.localPosition = new Vector3(0f, 0.45f, 0f);
+        handlePart.transform.localRotation = Quaternion.identity;
+        handlePart.transform.localScale = new Vector3(0.36f, 0.36f, 0.36f);
+        SetColor(handlePart, new Color(0.95f, 0.16f, 0.12f));
 
         GameObject indicatorPart = FindOrCreatePrimitiveChild(switchObject.transform, "SwitchIndicator", PrimitiveType.Sphere);
-        indicatorPart.transform.localPosition = new Vector3(0.10f, 0.78f, 0.13f);
-        indicatorPart.transform.localScale = new Vector3(0.09f, 0.09f, 0.09f);
+        indicatorPart.transform.localPosition = new Vector3(0.28f, 0.08f, 0.20f);
+        indicatorPart.transform.localRotation = Quaternion.identity;
+        indicatorPart.transform.localScale = new Vector3(0.13f, 0.13f, 0.13f);
         SetColor(indicatorPart, new Color(0.8f, 0.15f, 0.15f));
     }
 
@@ -1003,6 +1022,175 @@ public class SceneExpansionAndLevelConfig : MonoBehaviour
         if (renderer != null)
         {
             renderer.material.color = color;
+        }
+    }
+
+    private void ConfigureStoryAndProps(string sceneName, LevelLayout layout)
+    {
+        BuildReceiverLamp(layout);
+        BuildStoryMarker(sceneName, layout);
+        CleanPuzzleBlockVisuals(layout);
+    }
+
+    private void BuildReceiverLamp(LevelLayout layout)
+    {
+        GameObject receiver = GameObject.Find("Receiver_01");
+        if (receiver == null)
+        {
+            return;
+        }
+
+        receiver.transform.position = layout.receiver;
+        receiver.transform.localScale = Vector3.one;
+
+        // Keep the original receiver collider for laser hit detection, but hide its plain cube/sphere renderer.
+        Renderer ownRenderer = receiver.GetComponent<Renderer>();
+        if (ownRenderer != null)
+        {
+            ownRenderer.enabled = false;
+        }
+
+        Transform root = receiver.transform.Find("ReceiverLamp");
+        if (root == null)
+        {
+            GameObject rootObj = new GameObject("ReceiverLamp");
+            root = rootObj.transform;
+            root.SetParent(receiver.transform, false);
+        }
+
+        root.localPosition = Vector3.zero;
+        root.localRotation = Quaternion.identity;
+        root.localScale = Vector3.one;
+        root.gameObject.SetActive(true);
+
+        GameObject pedestal = FindOrCreatePrimitiveChild(root, "ReceiverPedestal", PrimitiveType.Cylinder);
+        pedestal.transform.localPosition = new Vector3(0f, -0.55f, 0f);
+        pedestal.transform.localScale = new Vector3(0.50f, 0.16f, 0.50f);
+        SetColor(pedestal, new Color(0.08f, 0.08f, 0.08f));
+
+        GameObject pole = FindOrCreatePrimitiveChild(root, "ReceiverPole", PrimitiveType.Cylinder);
+        pole.transform.localPosition = new Vector3(0f, -0.12f, 0f);
+        pole.transform.localScale = new Vector3(0.09f, 0.38f, 0.09f);
+        SetColor(pole, new Color(0.07f, 0.07f, 0.07f));
+
+        GameObject targetDisc = FindOrCreatePrimitiveChild(root, "ReceiverTargetDisc", PrimitiveType.Cylinder);
+        targetDisc.transform.localPosition = new Vector3(0f, 0.36f, 0f);
+        targetDisc.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        targetDisc.transform.localScale = new Vector3(0.56f, 0.055f, 0.56f);
+        SetColor(targetDisc, new Color(0.10f, 0.18f, 0.20f));
+
+        GameObject crystal = FindOrCreatePrimitiveChild(root, "ReceiverCrystalLamp", PrimitiveType.Sphere);
+        crystal.transform.localPosition = new Vector3(0f, 0.36f, -0.03f);
+        crystal.transform.localScale = new Vector3(0.34f, 0.34f, 0.34f);
+        SetColor(crystal, new Color(0.08f, 0.22f, 0.24f));
+
+        GameObject halo = FindOrCreatePrimitiveChild(root, "ReceiverPoweredHalo", PrimitiveType.Sphere);
+        halo.transform.localPosition = new Vector3(0f, 0.36f, -0.03f);
+        halo.transform.localScale = new Vector3(0.64f, 0.64f, 0.64f);
+        SetColor(halo, new Color(0.02f, 0.18f, 0.20f));
+
+        GameObject leftStrut = FindOrCreatePrimitiveChild(root, "ReceiverLeftStrut", PrimitiveType.Cube);
+        leftStrut.transform.localPosition = new Vector3(-0.30f, 0.13f, 0f);
+        leftStrut.transform.localScale = new Vector3(0.05f, 0.55f, 0.05f);
+        SetColor(leftStrut, new Color(0.06f, 0.06f, 0.06f));
+
+        GameObject rightStrut = FindOrCreatePrimitiveChild(root, "ReceiverRightStrut", PrimitiveType.Cube);
+        rightStrut.transform.localPosition = new Vector3(0.30f, 0.13f, 0f);
+        rightStrut.transform.localScale = new Vector3(0.05f, 0.55f, 0.05f);
+        SetColor(rightStrut, new Color(0.06f, 0.06f, 0.06f));
+
+        Light lampLight = root.GetComponentInChildren<Light>(true);
+        if (lampLight == null)
+        {
+            GameObject lightObj = new GameObject("ReceiverLampLight");
+            lightObj.transform.SetParent(root, false);
+            lightObj.transform.localPosition = new Vector3(0f, 0.36f, -0.03f);
+            lampLight = lightObj.AddComponent<Light>();
+            lampLight.type = LightType.Point;
+        }
+
+        lampLight.range = 4.0f;
+        lampLight.color = new Color(0.08f, 0.35f, 0.40f);
+        lampLight.intensity = 0.25f;
+
+        Receiver receiverScript = receiver.GetComponent<Receiver>();
+        if (receiverScript != null)
+        {
+            receiverScript.ForceRefreshVisual();
+        }
+    }
+
+    private void BuildStoryMarker(string sceneName, LevelLayout layout)
+    {
+        string name = layout.runtimePrefix + "_StoryMarker";
+        GameObject marker = GameObject.Find(name);
+        if (marker == null)
+        {
+            marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            marker.name = name;
+        }
+
+        marker.transform.position = layout.player + new Vector3(0f, 0.55f, 2.25f);
+        marker.transform.localScale = new Vector3(1.65f, 0.08f, 0.90f);
+        Renderer r = marker.GetComponent<Renderer>();
+        if (r != null)
+        {
+            if (coverMaterial != null)
+            {
+                r.material = coverMaterial;
+            }
+            r.material.color = new Color(0.18f, 0.12f, 0.06f);
+        }
+
+        Collider c = marker.GetComponent<Collider>();
+        if (c != null)
+        {
+            c.isTrigger = true;
+        }
+
+        StoryMarker story = marker.GetComponent<StoryMarker>();
+        if (story == null)
+        {
+            story = marker.AddComponent<StoryMarker>();
+        }
+
+        story.message = GetStoryMessage(sceneName);
+    }
+
+    private string GetStoryMessage(string sceneName)
+    {
+        if (sceneName == "MainScene") return "Log 01: You wake inside the Mirror Vault. Restore the light route to unlock the first gate.";
+        if (sceneName == "Level02") return "Log 02: The lamps are offline. Find the floor lever and power the emitter.";
+        if (sceneName == "Level03") return "Log 03: Security guards are active. Find the EMP device before crossing the vault.";
+        if (sceneName == "Level04") return "Log 04: The Sun Core requires a precise chain of mirror reflections.";
+        if (sceneName == "Level05") return "Log 05: Decoy mirrors will corrupt the light path. Use only the correct route.";
+        if (sceneName == "Level06") return "Final Log: Restore the Sun Core and escape before the vault seals forever.";
+        return "The Mirror Vault is unstable. Follow the light.";
+    }
+
+    private void CleanPuzzleBlockVisuals(LevelLayout layout)
+    {
+        // Keep blockers simple and lower to the floor so they look like designed cover blocks, not random floating cubes.
+        foreach (GameObject go in Object.FindObjectsOfType<GameObject>())
+        {
+            if (go == null)
+            {
+                continue;
+            }
+
+            string n = go.name;
+            if (n.Contains("_LaserCover_") || n.Contains("_Cover_"))
+            {
+                Vector3 p = go.transform.position;
+                p.y = Mathf.Min(p.y, 0.65f);
+                go.transform.position = p;
+
+                Renderer r = go.GetComponent<Renderer>();
+                if (r != null)
+                {
+                    r.material.color = new Color(0.22f, 0.17f, 0.13f);
+                }
+            }
         }
     }
 
@@ -1051,8 +1239,6 @@ public class SceneExpansionAndLevelConfig : MonoBehaviour
 
         HideLegacyDoorFramePieces(prefix);
 
-        // Snap the exit direction to the dominant world axis so the door and exit pad
-        // stay perfectly aligned instead of drifting diagonally.
         Vector3 delta = rawExitCenter - doorCenter;
         delta.y = 0f;
         Vector3 forward;
@@ -1067,24 +1253,27 @@ public class SceneExpansionAndLevelConfig : MonoBehaviour
 
         Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
         Quaternion frameRotation = Quaternion.LookRotation(forward, Vector3.up);
-
-        // Put the exit directly behind the door on the same centerline.
         Vector3 exitCenter = doorCenter + forward * 2.4f;
 
-        // Clear a wider zone around the doorway so no stray box/cover remains in front of it.
         ClearExitArea(doorCenter, exitCenter, 5.2f);
 
-        float openingWidth = 2.95f;
-        float postHeight = 3.35f;
-        float postThickness = 0.36f;
-        float gateDepth = 0.42f;
+        float openingWidth = 3.15f;
+        float postHeight = 3.75f;
+        float postThickness = 0.48f;
+        float gateDepth = 0.52f;
+
+        Color stoneColor = new Color(0.28f, 0.25f, 0.20f);
+        Color darkStoneColor = new Color(0.17f, 0.16f, 0.15f);
+        Color metalColor = new Color(0.08f, 0.085f, 0.09f);
+        Color goldColor = new Color(0.90f, 0.62f, 0.18f);
+        Color woodColor = new Color(0.34f, 0.24f, 0.16f);
 
         GameObject securityDoor = GameObject.Find("SecurityDoor");
         if (securityDoor != null)
         {
-            securityDoor.transform.position = doorCenter + Vector3.up * 0.50f;
+            securityDoor.transform.position = doorCenter + Vector3.up * 1.08f;
             securityDoor.transform.rotation = frameRotation;
-            securityDoor.transform.localScale = new Vector3(2.55f, 3.15f, 0.18f);
+            securityDoor.transform.localScale = new Vector3(2.68f, 4.05f, 0.16f);
 
             Renderer doorRenderer = securityDoor.GetComponent<Renderer>();
             if (doorRenderer != null)
@@ -1093,37 +1282,188 @@ public class SceneExpansionAndLevelConfig : MonoBehaviour
                 {
                     doorRenderer.material = coverMaterial;
                 }
-                doorRenderer.material.color = new Color(0.34f, 0.24f, 0.16f);
+                doorRenderer.material.color = woodColor;
             }
 
             DoorAnimator animator = securityDoor.GetComponent<DoorAnimator>();
             if (animator != null)
             {
-                animator.openOffset = new Vector3(0f, 3.8f, 0f);
+                animator.openOffset = new Vector3(0f, 4.05f, 0f);
                 animator.SnapClosedAtCurrentPosition();
             }
         }
 
         GameObject leftPost = CreateOrUpdateCube(prefix + "_CleanDoor_LeftPost",
-            doorCenter - right * (openingWidth * 0.5f + postThickness * 0.5f) + Vector3.up * 1.22f,
+            doorCenter - right * (openingWidth * 0.5f + postThickness * 0.5f) + Vector3.up * 1.78f,
             new Vector3(postThickness, postHeight, gateDepth), wallMaterial);
 
         GameObject rightPost = CreateOrUpdateCube(prefix + "_CleanDoor_RightPost",
-            doorCenter + right * (openingWidth * 0.5f + postThickness * 0.5f) + Vector3.up * 1.22f,
+            doorCenter + right * (openingWidth * 0.5f + postThickness * 0.5f) + Vector3.up * 1.78f,
             new Vector3(postThickness, postHeight, gateDepth), wallMaterial);
 
         GameObject topBeam = CreateOrUpdateCube(prefix + "_CleanDoor_TopBeam",
-            doorCenter + Vector3.up * 2.93f,
-            new Vector3(openingWidth + postThickness * 2f, postThickness, gateDepth), wallMaterial);
+            doorCenter + Vector3.up * 3.62f,
+            new Vector3(openingWidth + postThickness * 2.25f, 0.44f, gateDepth), wallMaterial);
 
-        foreach (GameObject g in new GameObject[] { leftPost, rightPost, topBeam })
+        GameObject lowerBeam = null;
+        GameObject frontStep = null;
+
+        // Fill the two dark side gaps around the gate so it feels embedded in the wall.
+        GameObject leftSideFill = CreateOrUpdateCube(prefix + "_CleanDoor_LeftSideFill",
+            doorCenter - right * (openingWidth * 0.5f + postThickness * 1.15f) + Vector3.up * 1.70f + forward * 0.02f,
+            new Vector3(0.82f, 3.55f, 0.64f), wallMaterial);
+
+        GameObject rightSideFill = CreateOrUpdateCube(prefix + "_CleanDoor_RightSideFill",
+            doorCenter + right * (openingWidth * 0.5f + postThickness * 1.15f) + Vector3.up * 1.70f + forward * 0.02f,
+            new Vector3(0.82f, 3.55f, 0.64f), wallMaterial);
+
+        // Extra bottom skirt blocks seal the visual side gaps at floor level.
+        GameObject leftBottomSkirt = CreateOrUpdateCube(prefix + "_CleanDoor_LeftBottomSkirt",
+            doorCenter - right * (openingWidth * 0.5f + postThickness * 1.15f) + Vector3.up * 0.12f + forward * 0.02f,
+            new Vector3(0.86f, 0.28f, 0.72f), wallMaterial);
+
+        GameObject rightBottomSkirt = CreateOrUpdateCube(prefix + "_CleanDoor_RightBottomSkirt",
+            doorCenter + right * (openingWidth * 0.5f + postThickness * 1.15f) + Vector3.up * 0.12f + forward * 0.02f,
+            new Vector3(0.86f, 0.28f, 0.72f), wallMaterial);
+
+        // Full-height side foundations: these visually seal the gate room all the way to the floor.
+        GameObject leftGroundSeal = CreateOrUpdateCube(prefix + "_CleanDoor_LeftGroundSeal",
+            doorCenter - right * (openingWidth * 0.5f + postThickness * 1.75f) + Vector3.up * 1.95f + forward * 0.02f,
+            new Vector3(1.10f, 4.10f, 1.15f), wallMaterial);
+
+        GameObject rightGroundSeal = CreateOrUpdateCube(prefix + "_CleanDoor_RightGroundSeal",
+            doorCenter + right * (openingWidth * 0.5f + postThickness * 1.75f) + Vector3.up * 1.95f + forward * 0.02f,
+            new Vector3(1.10f, 4.10f, 1.15f), wallMaterial);
+        // Terminal side blocker walls: seal the whole side of the exit room so the player cannot walk around the gate.
+        GameObject leftBypassWall = CreateOrUpdateCube(prefix + "_CleanDoor_LeftBypassWall",
+            doorCenter - right * (openingWidth * 0.5f + postThickness * 2.55f) + forward * 0.15f + Vector3.up * 1.95f,
+            new Vector3(1.45f, 4.25f, 4.60f), wallMaterial);
+
+        GameObject rightBypassWall = CreateOrUpdateCube(prefix + "_CleanDoor_RightBypassWall",
+            doorCenter + right * (openingWidth * 0.5f + postThickness * 2.55f) + forward * 0.15f + Vector3.up * 1.95f,
+            new Vector3(1.45f, 4.25f, 4.60f), wallMaterial);
+
+
+        // Hard side blockers: prevent the player from walking around the gate from either side.
+        GameObject leftHardWall = CreateOrUpdateCube(prefix + "_CleanDoor_LeftHardSideWall",
+            doorCenter - right * (openingWidth * 0.5f + postThickness * 2.55f) + Vector3.up * 2.05f + forward * 0.10f,
+            new Vector3(1.55f, 4.30f, 4.60f), wallMaterial);
+
+        GameObject rightHardWall = CreateOrUpdateCube(prefix + "_CleanDoor_RightHardSideWall",
+            doorCenter + right * (openingWidth * 0.5f + postThickness * 2.55f) + Vector3.up * 2.05f + forward * 0.10f,
+            new Vector3(1.55f, 4.30f, 4.60f), wallMaterial);
+
+        GameObject rearLeftBlock = CreateOrUpdateCube(prefix + "_CleanDoor_RearLeftBlock",
+            doorCenter + forward * 1.95f - right * (openingWidth * 0.5f + postThickness * 1.65f) + Vector3.up * 2.05f,
+            new Vector3(1.80f, 4.30f, 1.20f), wallMaterial);
+
+        GameObject rearRightBlock = CreateOrUpdateCube(prefix + "_CleanDoor_RearRightBlock",
+            doorCenter + forward * 1.95f + right * (openingWidth * 0.5f + postThickness * 1.65f) + Vector3.up * 2.05f,
+            new Vector3(1.80f, 4.30f, 1.20f), wallMaterial);
+
+        // No threshold/step/platform here: jumping is disabled, so the doorway must be flat and walk-through.
+        GameObject walkRamp = null;
+        GameObject innerPlatform = null;
+        GameObject floorBridge = null;
+
+        // Build a small enclosed gate room around the door instead of only a thin frame.
+        float roomWidth = openingWidth + postThickness * 3.25f;
+        float roomDepth = 2.85f;
+        float roomHeight = 4.15f;
+        float roomWallThickness = 0.34f;
+        Vector3 roomCenter = doorCenter + forward * 0.12f + Vector3.up * 2.02f;
+
+        GameObject leftRoomWall = CreateOrUpdateCube(prefix + "_CleanDoor_LeftRoomWall",
+            roomCenter - right * (roomWidth * 0.5f + roomWallThickness * 0.5f),
+            new Vector3(roomWallThickness, roomHeight, roomDepth), wallMaterial);
+
+        GameObject rightRoomWall = CreateOrUpdateCube(prefix + "_CleanDoor_RightRoomWall",
+            roomCenter + right * (roomWidth * 0.5f + roomWallThickness * 0.5f),
+            new Vector3(roomWallThickness, roomHeight, roomDepth), wallMaterial);
+
+        GameObject backRoomWallLeft = CreateOrUpdateCube(prefix + "_CleanDoor_BackWallLeft",
+            doorCenter + forward * 1.30f - right * (openingWidth * 0.5f + 0.48f) + Vector3.up * 2.02f,
+            new Vector3(1.05f, roomHeight, roomWallThickness), wallMaterial);
+
+        GameObject backRoomWallRight = CreateOrUpdateCube(prefix + "_CleanDoor_BackWallRight",
+            doorCenter + forward * 1.30f + right * (openingWidth * 0.5f + 0.48f) + Vector3.up * 2.02f,
+            new Vector3(1.05f, roomHeight, roomWallThickness), wallMaterial);
+
+        GameObject roofBlock = CreateOrUpdateCube(prefix + "_CleanDoor_RoomRoof",
+            doorCenter + forward * 0.12f + Vector3.up * 4.17f,
+            new Vector3(roomWidth + roomWallThickness * 2f, 0.28f, roomDepth), wallMaterial);
+
+        GameObject lintel = CreateOrUpdateCube(prefix + "_CleanDoor_GoldLintel",
+            doorCenter + Vector3.up * 3.88f + forward * -0.03f,
+            new Vector3(openingWidth + postThickness * 2.55f, 0.10f, gateDepth * 0.85f), wallMaterial);
+
+        GameObject leftCap = CreateOrUpdateCube(prefix + "_CleanDoor_LeftCap",
+            doorCenter - right * (openingWidth * 0.5f + postThickness * 0.5f) + Vector3.up * 3.82f,
+            new Vector3(postThickness * 1.35f, 0.28f, gateDepth * 1.10f), wallMaterial);
+
+        GameObject rightCap = CreateOrUpdateCube(prefix + "_CleanDoor_RightCap",
+            doorCenter + right * (openingWidth * 0.5f + postThickness * 0.5f) + Vector3.up * 3.82f,
+            new Vector3(postThickness * 1.35f, 0.28f, gateDepth * 1.10f), wallMaterial);
+
+        GameObject[] frameParts = new GameObject[] { leftPost, rightPost, topBeam, lowerBeam, frontStep, leftSideFill, rightSideFill, leftBottomSkirt, rightBottomSkirt, leftGroundSeal, rightGroundSeal, leftBypassWall, rightBypassWall, leftHardWall, rightHardWall, rearLeftBlock, rearRightBlock, walkRamp, innerPlatform, floorBridge, leftRoomWall, rightRoomWall, backRoomWallLeft, backRoomWallRight, roofBlock, lintel, leftCap, rightCap };
+        foreach (GameObject g in frameParts)
         {
             if (g != null)
             {
                 g.transform.rotation = frameRotation;
+                Renderer r = g.GetComponent<Renderer>();
+                if (r != null)
+                {
+                    r.material.color = (g == lintel) ? goldColor : stoneColor;
+                }
             }
         }
 
+        // Door decoration: metal bars, hinge plates and a small handle.
+        // These are parented to SecurityDoor, so they move upward with the door panel.
+        if (securityDoor != null)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                float offset = -0.90f + i * 0.45f;
+                GameObject bar = CreateOrUpdateCube(prefix + "_CleanDoor_MetalBar_" + i,
+                    doorCenter + right * offset + Vector3.up * 1.05f + forward * -0.13f,
+                    new Vector3(0.08f, 3.25f, 0.08f), coverMaterial != null ? coverMaterial : wallMaterial);
+                if (bar != null)
+                {
+                    bar.transform.rotation = frameRotation;
+                    bar.transform.SetParent(securityDoor.transform, true);
+                    Renderer r = bar.GetComponent<Renderer>();
+                    if (r != null) r.material.color = metalColor;
+                }
+            }
+
+            for (int i = 0; i < 3; i++)
+            {
+                float y = 0.00f + i * 1.05f;
+                GameObject cross = CreateOrUpdateCube(prefix + "_CleanDoor_CrossBar_" + i,
+                    doorCenter + Vector3.up * y + forward * -0.15f,
+                    new Vector3(2.42f, 0.09f, 0.09f), coverMaterial != null ? coverMaterial : wallMaterial);
+                if (cross != null)
+                {
+                    cross.transform.rotation = frameRotation;
+                    cross.transform.SetParent(securityDoor.transform, true);
+                    Renderer r = cross.GetComponent<Renderer>();
+                    if (r != null) r.material.color = metalColor;
+                }
+            }
+
+            GameObject handle = CreateOrUpdateCube(prefix + "_CleanDoor_Handle",
+                doorCenter + right * 0.90f + Vector3.up * 1.05f + forward * -0.24f,
+                new Vector3(0.12f, 0.42f, 0.12f), coverMaterial != null ? coverMaterial : wallMaterial);
+            if (handle != null)
+            {
+                handle.transform.rotation = frameRotation;
+                handle.transform.SetParent(securityDoor.transform, true);
+                Renderer r = handle.GetComponent<Renderer>();
+                if (r != null) r.material.color = goldColor;
+            }
+        }
 
         GameObject exitZoneObject = GameObject.Find("ExitZone");
         if (exitZoneObject != null)
@@ -1203,6 +1543,20 @@ public class SceneExpansionAndLevelConfig : MonoBehaviour
                 n.Contains("_Exit_RightFrame") ||
                 n.Contains("_Exit_TopFrame") ||
                 n.Contains("_ExitPad") ||
+                n.Contains("_CleanDoor_FrontStep") ||
+                n.Contains("_CleanDoor_LeftSideFill") ||
+                n.Contains("_CleanDoor_RightSideFill") ||
+                n.Contains("_CleanDoor_LeftBottomSkirt") ||
+                n.Contains("_CleanDoor_RightBottomSkirt") ||
+                n.Contains("_CleanDoor_WalkRamp") ||
+                n.Contains("_CleanDoor_InnerPlatform") ||
+                n.Contains("_CleanDoor_FloorBridge") ||
+                n.Contains("_CleanDoor_LeftRoomWall") ||
+                n.Contains("_CleanDoor_RightRoomWall") ||
+                n.Contains("_CleanDoor_BackWallLeft") ||
+                n.Contains("_CleanDoor_BackWallRight") ||
+                n.Contains("_CleanDoor_LowerStoneLip") ||
+                n.Contains("_CleanDoor_RoomRoof") ||
                 n.Contains("ExitFloor") ||
                 n.Contains("ExitMarker") ||
                 n.Contains("GoalPad") ||
@@ -1286,7 +1640,9 @@ public class SceneExpansionAndLevelConfig : MonoBehaviour
         if (lr != null)
         {
             lr.maxDistance = Mathf.Max(lr.maxDistance, 140f);
-            lr.receiverActivationRadius = Mathf.Max(lr.receiverActivationRadius, 1.85f);
+            // Balanced receiver tolerance: forgiving enough for mirror angle control,
+            // but still much smaller than the old loose range.
+            lr.receiverActivationRadius = 0.65f;
         }
     }
 

@@ -71,6 +71,7 @@ public class LaserSwitch : MonoBehaviour
     {
         isOn = !isOn;
         ApplyState();
+        GameAudio.PlaySwitch();
 
         if (GameManager.Instance != null)
         {
@@ -104,6 +105,25 @@ public class LaserSwitch : MonoBehaviour
         {
             // Use a sideways lever motion so the switch looks more like a real toggle.
             leverTransform.localRotation = Quaternion.Euler(0f, 0f, isOn ? -35f : 35f);
+        }
+    }
+
+    private void UpdateSwitchVisualState()
+    {
+        Transform lever = transform.Find("SwitchLever");
+        if (lever != null)
+        {
+            lever.localRotation = Quaternion.Euler(isOn ? 32f : -32f, 0f, 0f);
+        }
+
+        Transform indicator = transform.Find("SwitchIndicator");
+        if (indicator != null)
+        {
+            Renderer r = indicator.GetComponent<Renderer>();
+            if (r != null)
+            {
+                r.material.color = isOn ? new Color(0.2f, 1.0f, 0.25f) : new Color(0.8f, 0.15f, 0.15f);
+            }
         }
     }
 

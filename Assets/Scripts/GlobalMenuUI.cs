@@ -146,6 +146,15 @@ public class GlobalMenuUI : MonoBehaviour
         }
     }
 
+    private void QuitGame()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
+    }
+
     private void DrawSmallRuntimeHint()
     {
         if (mode != MenuMode.None)
@@ -177,69 +186,85 @@ public class GlobalMenuUI : MonoBehaviour
 
     private void DrawMainMenu()
     {
-        float w = 560f;
-        float h = 430f;
-        Rect panel = new Rect(Screen.width / 2f - w / 2f, Screen.height / 2f - h / 2f, w, h);
-        DrawMenuBackdrop(panel);
+        Rect full = new Rect(0f, 0f, Screen.width, Screen.height);
 
-        DrawMenuTitle(new Rect(panel.x + 45f, panel.y + 32f, panel.width - 90f, 82f),
+        Color old = GUI.color;
+        GUI.color = new Color(0.015f, 0.012f, 0.008f, 0.96f);
+        GUI.DrawTexture(full, Texture2D.whiteTexture);
+
+        // Subtle golden frame, full-screen style.
+        GUI.color = new Color(1f, 0.78f, 0.22f, 0.35f);
+        GUI.DrawTexture(new Rect(24f, 24f, Screen.width - 48f, 4f), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(24f, Screen.height - 28f, Screen.width - 48f, 4f), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(24f, 24f, 4f, Screen.height - 48f), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(Screen.width - 28f, 24f, 4f, Screen.height - 48f), Texture2D.whiteTexture);
+        GUI.color = old;
+
+        float titleW = Mathf.Min(720f, Screen.width * 0.78f);
+        float titleH = 92f;
+        float titleY = Mathf.Max(42f, Screen.height * 0.13f);
+        DrawMenuTitle(new Rect(Screen.width / 2f - titleW / 2f, titleY, titleW, titleH),
             "MIRROR PUZZLE GUARD",
             "Cartoon Dungeon Laser Puzzle");
 
-        float bw = 270f;
-        float bh = 46f;
+        float bw = Mathf.Min(310f, Screen.width * 0.38f);
+        float bh = 50f;
         float x = Screen.width / 2f - bw / 2f;
-        float y = panel.y + 145f;
+        float y = titleY + 132f;
+        float gap = 62f;
 
         if (GUI.Button(new Rect(x, y, bw, bh), "Start Game"))
         {
             StartGame("MainScene");
         }
-        if (GUI.Button(new Rect(x, y + 60f, bw, bh), "Level Select"))
+        if (GUI.Button(new Rect(x, y + gap, bw, bh), "Level Select"))
         {
             mode = MenuMode.LevelSelect;
         }
-        if (GUI.Button(new Rect(x, y + 120f, bw, bh), "Controls"))
+        if (GUI.Button(new Rect(x, y + gap * 2f, bw, bh), "Controls"))
         {
             mode = MenuMode.Controls;
         }
-        if (GUI.Button(new Rect(x, y + 180f, bw, bh), "Quit"))
+        if (GUI.Button(new Rect(x, y + gap * 3f, bw, bh), "Quit"))
         {
-            Application.Quit();
+            QuitGame();
         }
 
-        CartoonGUI.DrawCenterBox(new Rect(panel.x + 65f, panel.y + h - 58f, panel.width - 130f, 36f),
-            "Use mirrors, lamps, and EMP to escape.");
+        string hint = "Use mirrors, lamps, and EMP to escape.";
+        float hintW = Mathf.Min(620f, Screen.width * 0.72f);
+        CartoonGUI.DrawCenterBox(new Rect(Screen.width / 2f - hintW / 2f, Screen.height - 94f, hintW, 50f), hint);
     }
 
     private void DrawPauseMenu()
     {
-        float w = 470f;
-        float h = 385f;
+        float w = 500f;
+        float h = 420f;
         Rect panel = new Rect(Screen.width / 2f - w / 2f, Screen.height / 2f - h / 2f, w, h);
         DrawMenuBackdrop(panel);
-        DrawMenuTitle(new Rect(panel.x + 55f, panel.y + 28f, panel.width - 110f, 72f),
-            "PAUSED",
-            "Take a breath, then solve the mirrors.");
 
-        float bw = 250f;
-        float bh = 42f;
+        CartoonGUI.DrawCenterBox(new Rect(panel.x + 70f, panel.y + 28f, panel.width - 140f, 44f),
+            "<color=#FFD45A>PAUSED</color>");
+        CartoonGUI.DrawCenterBox(new Rect(panel.x + 70f, panel.y + 78f, panel.width - 140f, 44f),
+            "Take a breath and solve the mirrors.");
+
+        float bw = 260f;
+        float bh = 44f;
         float x = Screen.width / 2f - bw / 2f;
-        float y = panel.y + 118f;
+        float y = panel.y + 145f;
 
         if (GUI.Button(new Rect(x, y, bw, bh), "Resume"))
         {
             CloseMenus();
         }
-        if (GUI.Button(new Rect(x, y + 56f, bw, bh), "Restart Level"))
+        if (GUI.Button(new Rect(x, y + 58f, bw, bh), "Restart Level"))
         {
             StartGame(SceneManager.GetActiveScene().name);
         }
-        if (GUI.Button(new Rect(x, y + 112f, bw, bh), "Level Select"))
+        if (GUI.Button(new Rect(x, y + 116f, bw, bh), "Level Select"))
         {
             mode = MenuMode.LevelSelect;
         }
-        if (GUI.Button(new Rect(x, y + 168f, bw, bh), "Main Menu"))
+        if (GUI.Button(new Rect(x, y + 174f, bw, bh), "Main Menu"))
         {
             gameStarted = false;
             OpenMainMenu();
@@ -298,7 +323,7 @@ public class GlobalMenuUI : MonoBehaviour
 
         string text =
             "<color=#FFD45A>CONTROLS</color>\n" +
-            "WASD: Move    Mouse: Look    Space: Jump\n" +
+            "WASD: Move    Mouse: Look\n" +
             "Q / E: Rotate the nearest mirror\n" +
             "Z / C: Slide the nearest rail mirror\n" +
             "X: Toggle lamp switch from Level 2 onward\n" +

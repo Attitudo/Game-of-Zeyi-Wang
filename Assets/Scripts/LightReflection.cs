@@ -24,7 +24,7 @@ public class LightReflection : MonoBehaviour
 
     [Header("Receiver Detection")]
     [Tooltip("Extra tolerance used when the beam visually touches the receiver but the exact ray misses the small collider.")]
-    public float receiverActivationRadius = 1.0f;
+    public float receiverActivationRadius = 0.65f;
 
     [Header("Puzzle Rule")]
     [Tooltip("Receiver only powers on when the beam has reflected from exactly this many different mirrors.")]
@@ -330,6 +330,11 @@ public class LightReflection : MonoBehaviour
 
     private void ActivateReceiversNearBeamSegment(Vector3 start, Vector3 end, int mirrorCountForThisSegment)
     {
+        // Direct raycast hits still power receivers normally. This fallback is only
+        // for very tiny visual/collider misses, so keep it strict. A beam that only
+        // passes near the receiver should NOT open the door.
+        float strictRadius = Mathf.Clamp(receiverActivationRadius, 0.25f, 0.65f);
+
         Receiver[] receivers = Object.FindObjectsOfType<Receiver>();
         foreach (Receiver receiver in receivers)
         {
@@ -338,9 +343,16 @@ public class LightReflection : MonoBehaviour
                 continue;
             }
 
-            Vector3 closestPoint = GetClosestPointOnSegment(start, end, receiver.transform.position);
-            float distance = Vector3.Distance(closestPoint, receiver.transform.position);
-            if (distance <= receiverActivationRadius)
+            Vector3 targetPoint = receiver.transform.position;
+            Collider receiverCollider = receiver.GetComponent<Collider>();
+            if (receiverCollider != null)
+            {
+                targetPoint = receiverCollider.bounds.center;
+            }
+
+            Vector3 closestPoint = GetClosestPointOnSegment(start, end, targetPoint);
+            float distance = Vector3.Distance(closestPoint, targetPoint);
+            if (distance <= strictRadius)
             {
                 TryPowerReceiver(receiver, mirrorCountForThisSegment);
             }

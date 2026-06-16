@@ -67,6 +67,7 @@ public class GameManager : MonoBehaviour
         }
 
         playerCaught = true;
+        GameAudio.PlayCaught();
         temporaryMessage = "You were spotted by the security guard. Press R to restart.";
         messageTimer = 999f;
         Cursor.lockState = CursorLockMode.None;

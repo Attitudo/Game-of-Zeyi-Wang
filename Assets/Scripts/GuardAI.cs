@@ -117,6 +117,11 @@ public class GuardAI : MonoBehaviour
 
         if (CanSeePlayer())
         {
+            if (state != GuardState.Chase)
+            {
+                GameAudio.PlayGuardAlert();
+            }
+
             state = GuardState.Chase;
             lastKnownPlayerPosition = player.position;
             SetColor(Color.red);
