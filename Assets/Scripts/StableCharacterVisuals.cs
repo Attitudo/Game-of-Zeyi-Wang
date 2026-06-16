@@ -7,7 +7,6 @@ public static class StableCharacterVisuals
 
     public static GameObject ApplyPlayer(GameObject root)
     {
-        // Yaw 0 fixes the previous reversed/backward-walking visual.
         return Apply(root, "Stable_Player_Model", PlayerModelPath, 1.75f, false, 0f);
     }
 
@@ -229,7 +228,6 @@ public class StableCharacterMotion : MonoBehaviour
         baseLocalPosition = transform.localPosition;
         baseLocalRotation = transform.localRotation;
 
-        HideOldReachVisuals();
         CreateStepFeet();
     }
 
@@ -247,31 +245,8 @@ public class StableCharacterMotion : MonoBehaviour
         transform.localRotation = baseLocalRotation * Quaternion.Euler(pitchLean, yawSwing, moving ? Mathf.Sin(cycle) * 1.3f : 0f);
 
         UpdateStepFeet(moving, speed);
-        HideOldReachVisuals();
     }
 
-    private void HideOldReachVisuals()
-    {
-        if (owner == null)
-        {
-            return;
-        }
-
-        string[] oldNames =
-        {
-            "Procedural_MirrorReachArm",
-            "Procedural_MirrorReachHand"
-        };
-
-        foreach (string oldName in oldNames)
-        {
-            Transform old = owner.Find(oldName);
-            if (old != null)
-            {
-                old.gameObject.SetActive(false);
-            }
-        }
-    }
 
     private void CreateStepFeet()
     {
