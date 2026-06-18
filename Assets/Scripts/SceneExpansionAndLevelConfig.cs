@@ -1196,23 +1196,42 @@ public class SceneExpansionAndLevelConfig : MonoBehaviour
 
     private void ConfigureExit(string sceneName, LevelLayout layout)
     {
-        ExitZone exit = Object.FindObjectOfType<ExitZone>();
+        ExitZone exit = FindObjectOfType<ExitZone>();
         if (exit == null)
         {
             return;
         }
 
         exit.allowExitWithoutDoor = false;
-        exit.requiredDoor = Object.FindObjectOfType<DoorAnimator>();
+        exit.requiredDoor = FindObjectOfType<DoorAnimator>();
         exit.requiredKeycards = 0;
         exit.requiredEnergyCores = 0;
         exit.requiresEmpDevice = false;
         exit.isFinalLevel = false;
 
-        if (sceneName == "MainScene") exit.nextSceneName = "Level02";
-        else if (sceneName == "Level02") exit.nextSceneName = "Level03";
-        else if (sceneName == "Level03") exit.nextSceneName = "Level04";
-        else if (sceneName == "Level04") exit.nextSceneName = "Level05";
+        if (sceneName == "MainScene")
+        {
+            exit.nextSceneName = "Level02";
+        }
+        else if (sceneName == "Level02")
+        {
+            exit.nextSceneName = "Level03";
+        }
+        else if (sceneName == "Level03")
+        {
+            exit.nextSceneName = "Level04";
+            exit.requiredKeycards = 1;
+            exit.requiredEnergyCores = 0;
+            exit.requiresEmpDevice = false;
+        }
+        else if (sceneName == "Level04")
+        {
+            exit.nextSceneName = "Level05";
+
+            exit.requiredKeycards = 1;
+            exit.requiredEnergyCores = 2;
+            exit.requiresEmpDevice = false;
+        }
         else if (sceneName == "Level05")
         {
             exit.nextSceneName = "Level06";
@@ -1224,9 +1243,11 @@ public class SceneExpansionAndLevelConfig : MonoBehaviour
         {
             exit.isFinalLevel = true;
             exit.nextSceneName = "";
+
             exit.requiredKeycards = 1;
             exit.requiredEnergyCores = 3;
             exit.requiresEmpDevice = true;
+
             exit.finalLevelMessage = "All six dungeon trials complete. Press R to replay the final level.";
         }
     }
